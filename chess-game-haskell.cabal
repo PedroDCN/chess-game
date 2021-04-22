@@ -1,0 +1,74 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 76c2c076949f0bbeaa7e318f254847bb9da57ed4a8fccb99c30a2c400e133ce6
+
+name:           chess-game-haskell
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/PedroDCN/chess-game-haskell#readme>
+category:       GUI, Game
+homepage:       https://github.com/PedroDCN/chess-game-haskell#readme
+bug-reports:    https://github.com/PedroDCN/chess-game-haskell/issues
+author:         Pedro Donato, Gustavo Ventura, Marcos Silva, Gabriel Menezes, Wendson Magalhaes
+maintainer:     pedroxcg@gmail.com
+copyright:      (c) Pedro Donato 2021
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/PedroDCN/chess-game-haskell
+
+library
+  exposed-modules:
+      Cor
+      Game
+      GUI.GUI
+      LogicaJogar
+      LogicaValidar
+      Movimento
+      Pecas
+      Posicao
+      Tabuleiro
+  other-modules:
+      Paths_chess_game_haskell
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , threepenny-gui
+  default-language: Haskell2010
+
+executable chess-game-haskell-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_chess_game_haskell
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , chess-game-haskell
+    , threepenny-gui
+  default-language: Haskell2010
+
+test-suite chess-game-haskell-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_chess_game_haskell
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , chess-game-haskell
+    , threepenny-gui
+  default-language: Haskell2010

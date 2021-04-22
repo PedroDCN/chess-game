@@ -1,0 +1,44 @@
+name:                chess-game-haskell
+version:             0.1.0.0
+github:              "PedroDCN/chess-game-haskell"
+license:             MIT
+author:              "Pedro Donato, Gustavo Ventura, Marcos Silva, Gabriel Menezes, Wendson Magalhaes"
+maintainer:          "pedroxcg@gmail.com"
+copyright:           "(c) Pedro Donato 2021"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+description:         Please see the README on GitHub at <https://github.com/PedroDCN/chess-game-haskell#readme>
+category:            GUI, Game
+
+dependencies:
+- base >= 4.7 && < 5
+- threepenny-gui
+
+library:
+  source-dirs: src
+
+executables:
+  chess-game-haskell-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - chess-game-haskell
+
+tests:
+  chess-game-haskell-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - chess-game-haskell
