@@ -75,6 +75,36 @@ verificaMovimentoDama estado inicio fim =
     (inicio /= fim) && 
     ((verificaMovimentoTorre estado inicio fim) || (verificaMovimentoBispo estado inicio fim))
 
+-- pecaCor deve ser definido em outra classe (Cor da Peça - Preto ou Branco)
+-- pegaQuadrado (retorna uma peça que está no quadrado ou Vazio)
+-- pegaQuadradoCor (retorna a cor da peça no quadrado passado pro parâmetro)
+-- tipo "Vazio" também deve ser definido
+-- tipo Branco e Preto deve ser definido na classe Cor
+verificaMovimentoPeao :: EstadoJogo -> Int -> Int -> pecaCor -> Bool
+verificaMovimentoPeao estado inicio fim cor
+    | (peca == Vazio) || (linhaInicio == linhaFim) = False
+    | (colunaInicio == colunaFim) = (pegaQuadrado estado fim) == Vazio
+        && ((linhaInicio - linhaFim == 1)
+            || (
+                linhaInicio == 6
+                && (linhaInicio - linhaFim) == 2
+                && (pegaQuadrado estado (40 + colunaInicio)) == Vazio
+            )
+        )
+    | otherwise = (
+        (abs (colunaInicio - colunaFim)) == 1
+        && (linhaInicio - linhaFim) == 1
+        && (pegaQuadradoCor (pegaQuadrado estado fim)) == corOposta
+    )
+    where
+        linhaInicio  = inicio `div` 8
+        linhaFim     = fim    `div` 8
+        colunaInicio = inicio `mod` 8
+        colunaFim    = fim    `mod` 8
+        corOposta    = if cor == Branco then Preto else Branco
+        peca         = pegaQuadrado estado inicio
+
+
 -- Necessita de implementação em outras classes (Tipo Vazio e método de pegar o quadrado no tabuleiro)
 -- Assim como o "EstadoJogo" que armazena a posição das peças no tabuleiro (necessário para saber os quadrados que estão vazios)
 estaVazio :: EstadoJogo -> Int -> Bool
