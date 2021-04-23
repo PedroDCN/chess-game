@@ -22,3 +22,9 @@ module LogicaValidar where
 --   (verificar se a jogada anterior é a do peão)
 -- - você não pode fazer uma jogada que deixe seu rei em cheque
 --}
+
+verificaMovimentoCavalo :: Int -> Int -> Bool
+verificaMovimentoCavalo inicio fim =
+    (\linhasMovidas colunasMovidas ->
+        (linhasMovidas /= 0) && (colunasMovidas /= 0) && ((linhasMovidas + colunasMovidas) == 3)
+    ) (abs $ (inicio `div` 8) - (fim `div` 8)) (abs $ (inicio `mod` 8) - (fim `mod` 8))
