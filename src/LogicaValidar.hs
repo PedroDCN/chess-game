@@ -22,3 +22,11 @@ module LogicaValidar where
 --   (verificar se a jogada anterior é a do peão)
 -- - você não pode fazer uma jogada que deixe seu rei em cheque
 --}
+
+verificaMovimento :: Int -> Int -> Bool
+verificaMovimento inicio fim =
+    (\ linhaInicio colunaInicio linhaFim colunaFim ->
+        ((linhaInicio == linhaFim) && (abs (colunaInicio - colunaFim))==1)            -- Same row
+        || ((colunaInicio == colunaFim) && (abs (linhaInicio - linhaFim))==1)         -- Same column
+        || ((abs (linhaInicio - linhaFim))==1 && (abs (colunaInicio - colunaFim))==1) -- Moved diagonally
+    ) (inicio`div`8) (inicio`mod`8) (fim`div`8) (fim`mod`8)
