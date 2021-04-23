@@ -104,6 +104,30 @@ verificaMovimentoPeao estado inicio fim cor
         corOposta    = if cor == Branco then Preto else Branco
         peca         = pegaQuadrado estado inicio
 
+-- É necessário definir os tipos Humano, Computador, o estado do jogo (para pegar o turno de quem jogou)
+-- Também precisamos criar as funções do tabuleiro para pegar informações da peça (Cor e Tipo) que está no quadrado
+verificaMovimento :: EstadoJogo -> Int -> Int -> Bool
+verificaMovimento estado inicio fim
+    | not movimentoValido = False
+    | otherwise = case pecaTipo of
+        Peao      -> (verificaMovimentoPeao estado inicio fim)
+        Cavalo    -> (verificaMovimentoCavalo estado inicio fim)
+        Bispo     -> (verificaMovimentoBispo estado inicio fim)
+        Rei       -> (verificaMovimentoRei estado inicio fim)
+        Dama      -> (verificaMovimentoDama estado inicio fim)
+        Torre     -> (verificaMovimentoTorre estado inicio fim)
+        otherwise -> False
+    where
+        quadrado        = (pegaQuadrado estado inicio)
+        pecaTipo        = pegaQuadradoTipo quadrado
+        pecaCor         = pegaQuadradoCor quadrado
+        turno           = pegaTurno estado
+        movimentoValido = (inicio >= 0 && inicio <= 63 && fim >= 0 && fim <= 63)
+            && (
+                ((turno == Humano) && (pecaCor == Branco))
+                || ((turno == Computador) && (pecaCor == Preto))
+               )
+            && (pecaCor /= (pegaQuadradoCor (pegaQuadrado estado fim)))
 
 -- Necessita de implementação em outras classes (Tipo Vazio e método de pegar o quadrado no tabuleiro)
 -- Assim como o "EstadoJogo" que armazena a posição das peças no tabuleiro (necessário para saber os quadrados que estão vazios)
