@@ -55,6 +55,21 @@ verificaMovimentoCavalo inicio fim =
         (linhasMovidas /= 0) && (colunasMovidas /= 0) && ((linhasMovidas + colunasMovidas) == 3)
     ) (abs $ (inicio `div` 8) - (fim `div` 8)) (abs $ (inicio `mod` 8) - (fim `mod` 8))
 
+verificaMovimentoBispo :: EstadoJogo -> Int -> Int -> Bool
+verificaMovimentoBispo estado inicio fim
+    | (inicio == fim) || ((abs (linhaInicio - linhaFim)) /= (abs (colunaInicio - colunaFim))) = False
+    | ((linhaInicio - linhaFim) == (colunaFim - colunaInicio)) =
+        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 7), (inicio - 14)..(fim + 7)])))
+    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 7), (fim - 14)..(inicio + 7)])))
+    | otherwise =
+        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 9), (inicio - 18)..(fim + 9)])))
+    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 9), (fim - 18)..(inicio + 9)])))
+    where
+        linhaInicio  = inicio `div` 8
+        linhaFim     = fim    `div` 8
+        colunaInicio = inicio `mod` 8
+        colunaFim    = fim    `mod` 8
+
 -- Necessita de implementação em outras classes (Tipo Vazio e método de pegar o quadrado no tabuleiro)
 -- Assim como o "EstadoJogo" que armazena a posição das peças no tabuleiro (necessário para saber os quadrados que estão vazios)
 estaVazio :: EstadoJogo -> Int -> Bool
