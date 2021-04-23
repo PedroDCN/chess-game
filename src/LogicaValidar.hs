@@ -26,10 +26,31 @@ module LogicaValidar where
 verificaMovimentoRei :: Int -> Int -> Bool
 verificaMovimentoRei inicio fim =
     (\ linhaInicio colunaInicio linhaFim colunaFim ->
-        ((linhaInicio == linhaFim) && (abs (colunaInicio - colunaFim))==1)            -- Same row
-        || ((colunaInicio == colunaFim) && (abs (linhaInicio - linhaFim))==1)         -- Same column
-        || ((abs (linhaInicio - linhaFim))==1 && (abs (colunaInicio - colunaFim))==1) -- Moved diagonally
+        ((linhaInicio == linhaFim) && (abs (colunaInicio - colunaFim))==1)            
+        || ((colunaInicio == colunaFim) && (abs (linhaInicio - linhaFim))==1)         
+        || ((abs (linhaInicio - linhaFim))==1 && (abs (colunaInicio - colunaFim))==1)
     ) (inicio`div`8) (inicio`mod`8) (fim`div`8) (fim`mod`8)
+
+verificaMovimentoTorre :: EstadoJogo -> Int -> Int -> Bool
+verificaMovimentoTorre estado casaInicio casaFim
+    | (casaInicio == casaFim) = False
+    | (colunaInicio == colunaFim) = ((casaInicio > casaFim)          
+                                && ((foldr (&&) True  (map (estaVazio state) [(casaInicio - 8),(casaInicio - 16)..(casaFim + 8)]))))
+                             || ((not (casaInicio > endCell)) 
+                                && (foldr (&&) True  (map (estaVazio state) [(casaInicio + 8),(startCell+16)..(casaFim - 8)])))
+    | (colunaInicio == colunaFim) = ((casaInicio > endCell)          
+                    && (foldr (&&) True  (map (estaVazio estado) [(casaInicio - 1),(casaInicio - 2)..(casaFim + 1)])))
+                  || ((not (casaInicio > endCell))            
+                    && (foldr (&&) True  (map (estaVazio estado) [(casaInicio + 1),(casaInicio + 2)..(casaFim - 1)])))
+    | otherwise = False
+    where
+        linhaInicio = casaInicio `div` 8
+        colunaInicio = casaInicio `mod` 8
+        linhaFim   = casaFim   `div` 8
+        colunaFim   = casaFim   `mod` 8
+
+estaVazio :: EstadoJogo -> Int -> Bool
+estaVazio estado index = ((getSquareAt estado index) == Empty)
 
 verificaMovimentoCavalo :: Int -> Int -> Bool
 verificaMovimentoCavalo inicio fim =
