@@ -32,28 +32,30 @@ verificaMovimentoRei inicio fim =
     ) (inicio`div`8) (inicio`mod`8) (fim`div`8) (fim`mod`8)
 
 verificaMovimentoTorre :: EstadoJogo -> Int -> Int -> Bool
-verificaMovimentoTorre estado casaInicio casaFim
-    | (casaInicio == casaFim) = False
-    | (colunaInicio == colunaFim) = ((casaInicio > casaFim)          
-                                && ((foldr (&&) True  (map (estaVazio state) [(casaInicio - 8),(casaInicio - 16)..(casaFim + 8)]))))
-                             || ((not (casaInicio > endCell)) 
-                                && (foldr (&&) True  (map (estaVazio state) [(casaInicio + 8),(startCell+16)..(casaFim - 8)])))
-    | (colunaInicio == colunaFim) = ((casaInicio > endCell)          
-                    && (foldr (&&) True  (map (estaVazio estado) [(casaInicio - 1),(casaInicio - 2)..(casaFim + 1)])))
-                  || ((not (casaInicio > endCell))            
-                    && (foldr (&&) True  (map (estaVazio estado) [(casaInicio + 1),(casaInicio + 2)..(casaFim - 1)])))
+verificaMovimentoTorre estado inicio fim
+    | (inicio == fim) = False
+    | (colunaInicio == colunaFim) = ((inicio > fim)
+        && ((foldr (&&) True (map (estaVazio estado) [(inicio - 8),(inicio - 16)..(fim + 8)]))))
+        || ((not (inicio > fim))
+        && (foldr (&&) True  (map (estaVazio estado) [(inicio + 8),(inicio + 16)..(fim - 8)])))
+    | (linhaInicio == linhaFim) = ((inicio > fim)
+        && (foldr (&&) True (map (estaVazio estado) [(inicio - 1),(inicio - 2)..(fim + 1)])))
+        || ((not (inicio > fim))
+        && (foldr (&&) True (map (estaVazio estado) [(inicio + 1),(inicio + 2)..(fim - 1)])))
     | otherwise = False
     where
-        linhaInicio = casaInicio `div` 8
-        colunaInicio = casaInicio `mod` 8
-        linhaFim   = casaFim   `div` 8
-        colunaFim   = casaFim   `mod` 8
-
-estaVazio :: EstadoJogo -> Int -> Bool
-estaVazio estado index = ((getSquareAt estado index) == Empty)
+        linhaInicio  = inicio `div` 8
+        linhaFim     = fim    `div` 8
+        colunaInicio = inicio `mod` 8
+        colunaFim    = fim    `mod` 8
 
 verificaMovimentoCavalo :: Int -> Int -> Bool
 verificaMovimentoCavalo inicio fim =
     (\linhasMovidas colunasMovidas ->
         (linhasMovidas /= 0) && (colunasMovidas /= 0) && ((linhasMovidas + colunasMovidas) == 3)
     ) (abs $ (inicio `div` 8) - (fim `div` 8)) (abs $ (inicio `mod` 8) - (fim `mod` 8))
+
+-- Necessita de implementação em outras classes (Tipo Vazio e método de pegar o quadrado no tabuleiro)
+-- Assim como o "EstadoJogo" que armazena a posição das peças no tabuleiro (necessário para saber os quadrados que estão vazios)
+estaVazio :: EstadoJogo -> Int -> Bool
+estaVazio estado indice = ((pegaQuadrado estado indice) == Vazio)
