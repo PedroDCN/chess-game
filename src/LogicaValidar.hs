@@ -26,9 +26,9 @@ module LogicaValidar where
 verificaMovimentoRei :: Int -> Int -> Bool
 verificaMovimentoRei inicio fim =
     (\ linhaInicio colunaInicio linhaFim colunaFim ->
-        ((linhaInicio == linhaFim) && (abs (colunaInicio - colunaFim))==1)            
-        || ((colunaInicio == colunaFim) && (abs (linhaInicio - linhaFim))==1)         
-        || ((abs (linhaInicio - linhaFim))==1 && (abs (colunaInicio - colunaFim))==1)
+        ((linhaInicio == linhaFim) && (abs (colunaInicio - colunaFim)) == 1)            
+        || ((colunaInicio == colunaFim) && (abs (linhaInicio - linhaFim)) == 1)         
+        || ((abs (linhaInicio - linhaFim))==1 && (abs (colunaInicio - colunaFim)) == 1)
     ) (inicio`div`8) (inicio`mod`8) (fim`div`8) (fim`mod`8)
 
 verificaMovimentoTorre :: EstadoJogo -> Int -> Int -> Bool
@@ -37,7 +37,7 @@ verificaMovimentoTorre estado inicio fim
     | (colunaInicio == colunaFim) = ((inicio > fim)
         && ((foldr (&&) True (map (estaVazio estado) [(inicio - 8),(inicio - 16)..(fim + 8)]))))
         || ((not (inicio > fim))
-        && (foldr (&&) True  (map (estaVazio estado) [(inicio + 8),(inicio + 16)..(fim - 8)])))
+        && (foldr (&&) True (map (estaVazio estado) [(inicio + 8),(inicio + 16)..(fim - 8)])))
     | (linhaInicio == linhaFim) = ((inicio > fim)
         && (foldr (&&) True (map (estaVazio estado) [(inicio - 1),(inicio - 2)..(fim + 1)])))
         || ((not (inicio > fim))
@@ -69,6 +69,11 @@ verificaMovimentoBispo estado inicio fim
         linhaFim     = fim    `div` 8
         colunaInicio = inicio `mod` 8
         colunaFim    = fim    `mod` 8
+
+verificaMovimentoDama :: EstadoJogo -> Int -> Int -> Bool
+verificaMovimentoDama estado inicio fim =
+    (inicio /= fim) && 
+    ((verificaMovimentoTorre estado inicio fim) || (verificaMovimentoBispo estado inicio fim))
 
 -- Necessita de implementação em outras classes (Tipo Vazio e método de pegar o quadrado no tabuleiro)
 -- Assim como o "EstadoJogo" que armazena a posição das peças no tabuleiro (necessário para saber os quadrados que estão vazios)
