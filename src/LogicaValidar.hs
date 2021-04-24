@@ -1,5 +1,8 @@
 module LogicaValidar where
 
+import Tipos
+import Tabuleiro
+
 {--
 -- Funções para verificação das jogadas (movimentos) feitas no jogo
 -- se seguem as regras do xadrez.
@@ -75,12 +78,9 @@ verificaMovimentoDama estado inicio fim =
     (inicio /= fim) && 
     ((verificaMovimentoTorre estado inicio fim) || (verificaMovimentoBispo estado inicio fim))
 
--- pecaCor deve ser definido em outra classe (Cor da Peça - Preto ou Branco)
 -- pegaQuadrado (retorna uma peça que está no quadrado ou Vazio)
 -- pegaQuadradoCor (retorna a cor da peça no quadrado passado pro parâmetro)
--- tipo "Vazio" também deve ser definido
--- tipo Branco e Preto deve ser definido na classe Cor
-verificaMovimentoPeao :: EstadoJogo -> Int -> Int -> pecaCor -> Bool
+verificaMovimentoPeao :: EstadoJogo -> Int -> Int -> CorPeca -> Bool
 verificaMovimentoPeao estado inicio fim cor
     | (peca == Vazio) || (linhaInicio == linhaFim) = False
     | (colunaInicio == colunaFim) = (pegaQuadrado estado fim) == Vazio
@@ -104,12 +104,11 @@ verificaMovimentoPeao estado inicio fim cor
         corOposta    = if cor == Branco then Preto else Branco
         peca         = pegaQuadrado estado inicio
 
--- É necessário definir os tipos Humano, Computador, o estado do jogo (para pegar o turno de quem jogou)
--- Também precisamos criar as funções do tabuleiro para pegar informações da peça (Cor e Tipo) que está no quadrado
+-- Precisamos criar as funções do tabuleiro para pegar informações da peça (Cor e Tipo) que está no quadrado
 verificaMovimento :: EstadoJogo -> Int -> Int -> Bool
 verificaMovimento estado inicio fim
     | not movimentoValido = False
-    | otherwise = case pecaTipo of
+    | otherwise = case tipoPeca of
         Peao      -> (verificaMovimentoPeao estado inicio fim)
         Cavalo    -> (verificaMovimentoCavalo estado inicio fim)
         Bispo     -> (verificaMovimentoBispo estado inicio fim)
@@ -119,17 +118,16 @@ verificaMovimento estado inicio fim
         otherwise -> False
     where
         quadrado        = (pegaQuadrado estado inicio)
-        pecaTipo        = pegaQuadradoTipo quadrado
-        pecaCor         = pegaQuadradoCor quadrado
+        tipoPeca        = pegaQuadradoTipo quadrado
+        corPeca         = pegaQuadradoCor quadrado
         turno           = pegaTurno estado
         movimentoValido = (inicio >= 0 && inicio <= 63 && fim >= 0 && fim <= 63)
             && (
-                ((turno == Humano) && (pecaCor == Branco))
-                || ((turno == Computador) && (pecaCor == Preto))
+                ((turno == Humano) && (corPeca == Branco))
+                || ((turno == Computador) && (corPeca == Preto))
                )
-            && (pecaCor /= (pegaQuadradoCor (pegaQuadrado estado fim)))
+            && (corPeca /= (pegaQuadradoCor (pegaQuadrado estado fim)))
 
--- Necessita de implementação em outras classes (Tipo Vazio e método de pegar o quadrado no tabuleiro)
--- Assim como o "EstadoJogo" que armazena a posição das peças no tabuleiro (necessário para saber os quadrados que estão vazios)
+-- Necessita de implementação em outra classe (método de pegar o quadrado no tabuleiro)
 estaVazio :: EstadoJogo -> Int -> Bool
 estaVazio estado indice = ((pegaQuadrado estado indice) == Vazio)
