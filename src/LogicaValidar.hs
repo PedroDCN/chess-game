@@ -2,6 +2,7 @@ module LogicaValidar where
 
 import Tipos
 import Tabuleiro
+import Utilitarios
 
 {--
 -- Funções para verificação das jogadas (movimentos) feitas no jogo
@@ -26,12 +27,12 @@ import Tabuleiro
 -- - você não pode fazer uma jogada que deixe seu rei em cheque
 --}
 
-verificaMovimentoRei :: Int -> Int -> Bool
-verificaMovimentoRei inicio fim =
+verificaMovimentoRei :: EstadoJogo -> Int -> Int -> Bool
+verificaMovimentoRei estado inicio fim =
     (\ linhaInicio colunaInicio linhaFim colunaFim ->
         ((linhaInicio == linhaFim) && (abs (colunaInicio - colunaFim)) == 1)            
         || ((colunaInicio == colunaFim) && (abs (linhaInicio - linhaFim)) == 1)         
-        || ((abs (linhaInicio - linhaFim))==1 && (abs (colunaInicio - colunaFim)) == 1)
+        || ((abs (linhaInicio - linhaFim)) == 1 && (abs (colunaInicio - colunaFim)) == 1)
     ) (inicio`div`8) (inicio`mod`8) (fim`div`8) (fim`mod`8)
 
 verificaMovimentoTorre :: EstadoJogo -> Int -> Int -> Bool
@@ -52,8 +53,8 @@ verificaMovimentoTorre estado inicio fim
         colunaInicio = inicio `mod` 8
         colunaFim    = fim    `mod` 8
 
-verificaMovimentoCavalo :: Int -> Int -> Bool
-verificaMovimentoCavalo inicio fim =
+verificaMovimentoCavalo :: EstadoJogo -> Int -> Int -> Bool
+verificaMovimentoCavalo estado inicio fim =
     (\linhasMovidas colunasMovidas ->
         (linhasMovidas /= 0) && (colunasMovidas /= 0) && ((linhasMovidas + colunasMovidas) == 3)
     ) (abs $ (inicio `div` 8) - (fim `div` 8)) (abs $ (inicio `mod` 8) - (fim `mod` 8))
@@ -131,3 +132,18 @@ verificaMovimento estado inicio fim
 -- Necessita de implementação em outra classe (método de pegar o quadrado no tabuleiro)
 estaVazio :: EstadoJogo -> Int -> Bool
 estaVazio estado indice = ((pegaQuadrado estado indice) == Vazio)
+
+-- Verifica se é um xeque-mate (xeque, mate)
+verificaXequeMate :: EstadoJogo -> PecaCor -> (Bool, Bool)
+verificaXequeMate estado cor =
+    (\quadradoRei ->
+        (\(primeiraLista, segundaLista) ->
+            (\listaXeque ->
+                (
+                    length (listaXeque) > 0, -- Verificação para o Xeque
+                    (length(listaXeque) > 0) && (not (podeMoverRei estado cor quadradoRei)) -- Verificação para o Mate
+                    && (not $ podeAtacarPecaXeque estado cor quadradoRei (primeiraLista, segundaLista) listaXeque)
+                )
+            ) $ filter (\valor -> valor >= 0) (primeiraLista ++ segundaLista)
+        ) $ pegaPosicoesXeque estado (inverteCor cor) False quadradoRei
+    ) $ pegaPosicaoRei estado Cor
