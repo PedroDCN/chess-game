@@ -147,3 +147,13 @@ verificaXequeMate estado cor =
             ) $ filter (\valor -> valor >= 0) (primeiraLista ++ segundaLista)
         ) $ pegaPosicoesXeque estado (inverteCor cor) False quadradoRei
     ) $ pegaPosicaoRei estado Cor
+
+-- Checa se é um Xeque
+estaEmXeque :: EstadoJogo -> PecaCor -> Bool
+estaEmXeque estado cor = verificaXeque estado cor False (pegaPosicaoRei estado cor)
+
+-- Computa a lista de todas as posições de xeque
+verificaXeque :: EstadoJogo -> PecaCor -> Bool -> Int -> Bool
+verificaXeque estado cor primeiraIteracao quadradoRei =
+    let (primeiraLista, segundaLista) = pegaPosicoesXeque estado (inverteCor cor) primeiraIteracao quadradoRei in
+    let listaXeque = filter(\valor -> valor >= 0) (primeiraLista ++ segundaLista) in (length(listaXeque) > 0)

@@ -1,10 +1,9 @@
 module Game where
 
-import Cor
 import LogicaJogar
 import LogicaValidar
 import Movimento
-import Pecas
+import Tipos
 import Posicao 
 import Tabuleiro 
 
