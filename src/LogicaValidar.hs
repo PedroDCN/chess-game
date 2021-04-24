@@ -3,6 +3,7 @@ module LogicaValidar where
 import Tipos
 import Tabuleiro
 import Utilitarios
+import Data.List
 
 {--
 -- Funções para verificação das jogadas (movimentos) feitas no jogo
@@ -181,3 +182,74 @@ podeAtacarPecaXeque _ _ _ _ _ = True
 
 podeAtacarCavalo :: EstadoJogo -> CorPeca -> Int -> Bool
 podeAtacarCavalo estado cor quadrado = verificaXeque estado cor True quadrado
+
+podeBloquearPecaXeque :: EstadoJogo -> CorPeca -> Int -> ([Int],[Int]) -> [Int] -> Bool
+podeBloquearPecaXeque estado cor quadrado (primeiraLista, segundaLista) listaXeque -- Acha o caminho para bloquear a peça que ataca o rei
+    | (indice == Just 0) = verificaAtaqueColunaEsquerda           estado cor linha (cabecaListaXeque `mod` 8) coluna
+    | (indice == Just 1) = verificaAtaqueColunaDireita            estado cor linha (cabecaListaXeque `mod` 8) coluna
+    | (indice == Just 2) = verificaAtaqueLinhaAbaixo              estado cor linha (cabecaListaXeque `div` 8) coluna
+    | (indice == Just 3) = verificaAtaqueLinhaAcima               estado cor linha (cabecaListaXeque `div` 8) coluna
+    | (indice == Just 4) = verificaAtaqueDiagonalSuperiorEsquerdo estado cor linha (cabecaListaXeque) coluna
+    | (indice == Just 5) = verificaAtaqueDiagonalInferiorEsquerdo estado cor linha (cabecaListaXeque) coluna
+    | (indice == Just 6) = verificaAtaqueDiagonalSuperiorDireito  estado cor linha (cabecaListaXeque) coluna
+    | (indice == Just 7) = verificaAtaqueDiagonalInferiorDireito  estado cor linha (cabecaListaXeque) coluna
+    | otherwise          = verificaAtaquePeao                     estado cor cabecaListaXeque
+    where
+        cabecaListaXeque = listaXeque !! 0
+        indice = elemIndex (cabecaListaXeque) primeiraLista
+        linha = quadrado `div` 8
+        coluna = quadrado `mod` 8
+
+-- Funções para verificar de onde o ataque vem para a função acima
+
+verificaAtaquePeao :: EstadoJogo -> CorPeca -> Int -> Bool
+verificaAtaquePeao estado cor quadrado = verificaXeque estado cor False quadrado
+
+-- l = linha, c coluna
+verificaAtaqueColunaEsquerda :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueColunaEsquerda estado cor linhaInicio colunaFim colunaInicio =
+    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio], cc <- [colunaInicio-1,colunaInicio-2..colunaFim]] in
+        foldr (||) False (map (verificaXeque estado cor False) lista)
+
+verificaAtaqueColunaDireita :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueColunaDireita estado cor linhaInicio colunaFim colunaInicio =
+    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio], cc <- [colunaInicio+1,colunaInicio+2..colunaFim]] in
+        foldr (||) False (map (verificaXeque estado cor False) lista)
+
+verificaAtaqueLinhaAbaixo :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueLinhaAbaixo estado cor linhaInicio linhaFim colunaInicio =
+    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio+1,linhaInicio+2..linhaFim], cc <- [colunaInicio]] in
+        foldr (||) False (map (verificaXeque estado cor False) lista)
+
+verificaAtaqueLinhaAcima :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueLinhaAcima estado cor linhaInicio linhaFim colunaInicio =
+    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio-1,linhaInicio-2..linhaFim], cc <- [colunaInicio]] in
+        foldr (||) False (map (verificaXeque estado cor False) lista)
+
+verificaAtaqueDiagonalSuperiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueDiagonalSuperiorEsquerdo estado cor linhaInicio fim colunaInicio =
+    (\linhaFim colunaFim ->
+        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio-1,linhaInicio-2..linhaFim], cc <- [colunaInicio-1,colunaInicio-2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
+            foldr (||) False (map (verificaXeque estado cor False) lista)
+    ) (fim `div` 8) (fim `mod` 8)
+
+verificaAtaqueDiagonalInferiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueDiagonalInferiorEsquerdo estado cor linhaInicio fim colunaInicio =
+    (\linhaFim colunaFim ->
+        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio+1,linhaInicio+2..linhaFim], cc <- [colunaInicio-1,colunaInicio-2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
+            foldr (||) False (map (verificaXeque estado cor False) lista)
+    ) (fim `div` 8) (fim `mod` 8)
+
+verificaAtaqueDiagonalSuperiorDireito :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueDiagonalSuperiorDireito estado cor linhaInicio fim colunaInicio =
+    (\linhaFim colunaFim ->
+        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio-1,linhaInicio-2..linhaFim], cc <- [colunaInicio+1,colunaInicio+2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
+            foldr (||) False (map (verificaXeque estado cor False) lista)
+    ) (fim `div` 8) (fim `mod` 8)
+
+verificaAtaqueDiagonalInferiorDireito :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
+verificaAtaqueDiagonalInferiorDireito estado cor linhaInicio fim colunaInicio =
+    (\linhaFim colunaFim ->
+        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio+1,linhaInicio+2..linhaFim], cc <- [colunaInicio+1,colunaInicio+2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
+            foldr (||) False (map (verificaXeque estado cor False) lista)
+    ) (fim `div` 8) (fim `mod` 8)
