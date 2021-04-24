@@ -134,7 +134,7 @@ estaVazio :: EstadoJogo -> Int -> Bool
 estaVazio estado indice = ((pegaQuadrado estado indice) == Vazio)
 
 -- Verifica se é um xeque-mate (xeque, mate)
-verificaXequeMate :: EstadoJogo -> PecaCor -> (Bool, Bool)
+verificaXequeMate :: EstadoJogo -> CorPeca -> (Bool, Bool)
 verificaXequeMate estado cor =
     (\quadradoRei ->
         (\(primeiraLista, segundaLista) ->
@@ -146,14 +146,38 @@ verificaXequeMate estado cor =
                 )
             ) $ filter (\valor -> valor >= 0) (primeiraLista ++ segundaLista)
         ) $ pegaPosicoesXeque estado (inverteCor cor) False quadradoRei
-    ) $ pegaPosicaoRei estado Cor
+    ) $ pegaPosicaoRei estado cor
 
 -- Checa se é um Xeque
-estaEmXeque :: EstadoJogo -> PecaCor -> Bool
+estaEmXeque :: EstadoJogo -> CorPeca -> Bool
 estaEmXeque estado cor = verificaXeque estado cor False (pegaPosicaoRei estado cor)
 
 -- Computa a lista de todas as posições de xeque
-verificaXeque :: EstadoJogo -> PecaCor -> Bool -> Int -> Bool
+verificaXeque :: EstadoJogo -> CorPeca -> Bool -> Int -> Bool
 verificaXeque estado cor primeiraIteracao quadradoRei =
     let (primeiraLista, segundaLista) = pegaPosicoesXeque estado (inverteCor cor) primeiraIteracao quadradoRei in
     let listaXeque = filter(\valor -> valor >= 0) (primeiraLista ++ segundaLista) in (length(listaXeque) > 0)
+
+-- Achar o quadrado pela linha e coluna
+pegaQuadradoIndice :: (Int,Int) -> Int
+pegaQuadradoIndice (x,y) = x * 8 + y
+
+-- Verifica se o rei pode se mover
+podeMoverRei :: EstadoJogo -> CorPeca -> Int -> Bool
+podeMoverRei estado cor quadrado =
+    let l = quadrado `div` 8 in -- l (linha)
+    let c = quadrado `mod` 8 in -- c (coluna)
+    let lista = filter (\valor -> (pegaQuadradoCor estado valor) /= cor) $ map pegaQuadradoIndice [(ll,cc) | ll <- [l-1, l+1], cc <- [c-1, c+1], ll >= 0, cc >= 0, ll <= 7, cc <= 7, (ll,cc) /= (l,c)] in
+    not (foldr (&&) True (map (verificaXeque estado cor True) lista))
+
+-- Tenta bloquear ou atacar a peça que está atacando o rei
+podeAtacarPecaXeque :: EstadoJogo -> CorPeca -> Int -> ([Int],[Int]) -> [Int] -> Bool
+podeAtacarPecaXeque estado cor quadrado (primeiraLista,segundaLista) listaXeque
+    | (length(listaXeque) >= 2) = False -- Se tem mais de um Xeque acabou
+    | (length(listaXeque) == 1) =       -- Se só possuir um xeque, então tenta atacar ou bloquear
+    if (length(filter(\valor -> valor >= 0) (segundaLista)) == 1) then podeAtacarCavalo estado (inverteCor cor) (listaXeque !! 0)
+    else podeBloquearPecaXeque estado (inverteCor cor) quadrado (primeiraLista,segundaLista) listaXeque
+podeAtacarPecaXeque _ _ _ _ _ = True
+
+podeAtacarCavalo :: EstadoJogo -> CorPeca -> Int -> Bool
+podeAtacarCavalo estado cor quadrado = verificaXeque estado cor True quadrado

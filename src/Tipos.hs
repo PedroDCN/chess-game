@@ -14,11 +14,11 @@ data CorPeca = Branco | Preto | SemCor deriving (Show, Eq)
 
 data TipoPeca = Bispo | Rei | Cavalo | Peao | Dama | Torre | SemTipo deriving (Show, Eq)
 
-data Jogador = Humano | Bot deriving (Show, Eq)
+data Jogador = Humano | Computador deriving (Show, Eq)
 
 data EstadoJogo = EstadoJogo {
     tabuleiro           :: Tabuleiro, -- Lista 2D de Quadrados
-    turno               :: Jogador,   -- Turno do Jogador (Humano) ou do Bot
+    turno               :: Jogador,   -- Turno do Jogador (Humano) ou do Computador
     reiBranco           :: Int,       -- Posição do Rei Branco
     reiPreto            :: Int,       -- Posição do Rei Preto
     movimentoHabilitado :: Bool,      -- Verdade se o Jogador pode se mover
