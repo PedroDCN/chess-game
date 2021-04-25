@@ -1,5 +1,6 @@
 module Tabuleiro where
 
+import  Tipos
 {-- 
 -- tabuleiro é uma lista de quadrados, ind 0 = a1, ind 63 = h8
 -- ou
@@ -29,3 +30,27 @@ module Tabuleiro where
 --
 -- obs: funções de acesso usam o tipo posição do modulo Posicao.
 --}
+
+
+
+{- Utilitários do Quadrado -}
+
+-- obter a cor de um quadrado
+getCorQuadrado  ::  Quadrado  ->  CorPeca
+getCorQuadrado( Peca cp tp) = cp
+getCorQuadrado ( Vazio )        =  SemCor
+
+-- obter tipo de quadrado
+getTipoQuadrado  ::  Quadrado  ->  TipoPeca
+getTipoQuadrado  ( Peca cp tp) = tp
+getTipoQuadrado  ( Vazio )        =  SemTipo
+
+getPTipoQuadrado ::  TipoPeca  ->  String
+getPTipoQuadrado tp =  case tp of
+    Bispo     ->  " Bispo "
+    Rei       ->  " Rei "
+    Cavaleiro ->  " Cavaleiro "
+    Peão      ->  " Peão "
+    Rainha    ->  " Rainha "
+    Torre     ->  " Torre "
+    otherwise ->  " SemTipo "
