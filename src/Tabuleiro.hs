@@ -35,12 +35,12 @@ import  Tipos
 
 {- Utilitários do Quadrado -}
 
--- obter a cor de um quadrado
+-- Obter a cor de um quadrado
 getCorQuadrado  ::  Quadrado  ->  CorPeca
 getCorQuadrado( Peca cp tp) = cp
 getCorQuadrado ( Vazio )        =  SemCor
 
--- obter tipo de quadrado
+-- Obter tipo de quadrado
 getTipoQuadrado  ::  Quadrado  ->  TipoPeca
 getTipoQuadrado  ( Peca cp tp) = tp
 getTipoQuadrado  ( Vazio )        =  SemTipo
@@ -54,3 +54,94 @@ getPTipoQuadrado tp =  case tp of
     Rainha    ->  " Rainha "
     Torre     ->  " Torre "
     otherwise ->  " SemTipo "
+    
+    
+ {- Utilitários do Estado do Jogo -}
+
+-- Obter o Tabuleiro
+getTabuleiro  ::  EstadoJogo  ->  Tabuleiro
+getTabuleiro ( EstadoJogo {
+    tabuleiro = t, turno = _,
+    reiBranco = _, reiPreto = _, pontoInicialSetado = _,
+    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    }) = t
+
+-- Obter o Turno
+getTurno  ::  EstadoJogo  ->  Jogador
+getTurno ( EstadoJogo {
+    tabuleiro = _, turno = turn,
+    reiBranco = _, reiPreto = _, pontoInicialSetado = _,
+    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    }) = turn
+
+-- Rei Branco ou Rei Preto
+getReiPos  ::  EstadoJogo  ->  CorPeca  ->  Int
+getReiPos estado cor
+    | cor == Branco  = getReiBrancoPos estado
+    |  otherwise     = getReiPretoPos estado
+
+-- Obter a posição do Rei Branco
+getReiBrancoPos  ::  EstadoJogo  ->  Int
+getReiBrancoPos ( EstadoJogo {
+    tabuleiro = _, turno = _,
+    reiBranco = bRei, reiPreto = _, pontoInicialSetado = _,
+    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    }) = bRei
+
+-- Obter a posição do Rei Preto
+getReiPretoPos  ::  EstadoJogo  ->  Int
+getReiPretoPos ( EstadoJogo {
+    tabuleiro = _, turno = _,
+    reiBranco = _, reiPreto = pRei, pontoInicialSetado = _,
+    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    }) = pRei
+
+-- 'Obter o Ponto Inicial
+getPontoInicial  ::  EstadoJogo  ->  Int
+getPontoIncial ( EstadoJogo {
+    tabuleiro = _, turno = _,
+    reiBranco = _, reiPreto = _, pontoInicialSetado = _,
+    pontoIncial = pi, pontosTabuleiro = _, movimentoHabilitado = _
+    }) = pi
+
+-- Obter os Pontos do Tabuleiro
+getPontosTabuleiro  ::    -> [ QuadradoTabuleiro ]
+getPontosTabuleiro ( EstadoJogo {
+    tabuleiro = _, turno = _,
+    reiBranco = _, reiPreto = _, pontoInicialSetado = _,
+    pontoInicial= _, pontosTabuleiro = pt, movimentoHabilitado = _
+    }) = pt
+
+-- Obter o Movimento Habilitado
+getMovimentoHabilitado  ::  EstadoJogo  ->  Bool
+getMovimentoHabilitado ( EstadoJogo {
+    tabuleiro = _, turno = _,
+    reiBranco = _, reiPreto = _, pontoInicialSetado = _,
+    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = mh
+    }) = mh
+
+-- Obter o Ponto Inicial Setado
+ehPontoInicialSetado  ::  EstadoJogo  ->  Bool
+ehPontoInicialSetado ( EstadoJogo {
+   tabuleiro = _, turno = _,
+    reiBranco = _, reiPreto = _, pontoInicialSetado = pis,
+    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    }) = pis
+
+-- Obter o quadrado do Tabuleiro em determinado índice (0-63)
+getQuadradoAt  ::  EstadoJogo  ->  Int  ->  Quadrado
+getQuadradoAt estado indice = ( \ tabuleiro linha coluna ->
+        ((tabuleiro !! linha) !! coluna)
+    ) (getTabuleiro estado) (índice `div`  8 ) (índice ` mod`  8 )
+
+-- Obter a cor do quadrado do Tabuleiro em determinado índice (0-63)
+getCorQuadradoAt  ::  EstadoJogo  ->  Int  ->  CorPeca
+getCorQuadradoAt estado indice = ( \ tabuleiro linha coluna ->
+        getCorQuadrado ((tabuleiro !! linha) !! coluna)
+    ) (getTabuleiro) (índice `div`  8 ) (índice ` mod`  8 )
+
+
+getPecaTabuleiroAt  ::  EstadoJogo  ->  Int  -> ( Int , GLfloat )
+getPecaTabuleiroAt estado indice = ( \ (_, _, p) -> p) ((getPontosTabuleiro estado) !! indice)
+
+
