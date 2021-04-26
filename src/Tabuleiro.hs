@@ -49,9 +49,9 @@ getPTipoQuadrado ::  TipoPeca  ->  String
 getPTipoQuadrado tp =  case tp of
     Bispo     ->  " Bispo "
     Rei       ->  " Rei "
-    Cavaleiro ->  " Cavaleiro "
-    Peão      ->  " Peão "
-    Rainha    ->  " Rainha "
+    Cavalo    ->  " Cavalo "
+    Peao      ->  " Peao "
+    Dama      ->  " Dama "
     Torre     ->  " Torre "
     otherwise ->  " SemTipo "
     
@@ -71,7 +71,7 @@ getTurno  ::  EstadoJogo  ->  Jogador
 getTurno ( EstadoJogo {
     tabuleiro = _, turno = turn,
     reiBranco = _, reiPreto = _, pontoInicialSetado = _,
-    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    pontoInicial = _, movimentoHabilitado = _
     }) = turn
 
 -- Rei Branco ou Rei Preto
@@ -85,7 +85,7 @@ getReiBrancoPos  ::  EstadoJogo  ->  Int
 getReiBrancoPos ( EstadoJogo {
     tabuleiro = _, turno = _,
     reiBranco = bRei, reiPreto = _, pontoInicialSetado = _,
-    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    pontoInicial = _, movimentoHabilitado = _
     }) = bRei
 
 -- Obter a posição do Rei Preto
@@ -93,19 +93,19 @@ getReiPretoPos  ::  EstadoJogo  ->  Int
 getReiPretoPos ( EstadoJogo {
     tabuleiro = _, turno = _,
     reiBranco = _, reiPreto = pRei, pontoInicialSetado = _,
-    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    pontoInicial = _, movimentoHabilitado = _
     }) = pRei
 
 -- 'Obter o Ponto Inicial
 getPontoInicial  ::  EstadoJogo  ->  Int
-getPontoIncial ( EstadoJogo {
+getPontoInicial ( EstadoJogo {
     tabuleiro = _, turno = _,
     reiBranco = _, reiPreto = _, pontoInicialSetado = _,
-    pontoIncial = pti, pontosTabuleiro = _, movimentoHabilitado = _
+    pontoInicial = pti, movimentoHabilitado = _
     }) = pti
 
 -- Obter os Pontos do Tabuleiro
-getPontosTabuleiro  ::    -> [ QuadradoTabuleiro ]
+getPontosTabuleiro  ::  EstadoJogo -> [ QuadradoTabuleiro ]
 getPontosTabuleiro ( EstadoJogo {
     tabuleiro = _, turno = _,
     reiBranco = _, reiPreto = _, pontoInicialSetado = _,
@@ -117,7 +117,7 @@ getMovimentoHabilitado  ::  EstadoJogo  ->  Bool
 getMovimentoHabilitado ( EstadoJogo {
     tabuleiro = _, turno = _,
     reiBranco = _, reiPreto = _, pontoInicialSetado = _,
-    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = mh
+    pontoInicial = _, movimentoHabilitado = mh
     }) = mh
 
 -- Obter o Ponto Inicial Setado
@@ -125,7 +125,7 @@ ehPontoInicialSetado  ::  EstadoJogo  ->  Bool
 ehPontoInicialSetado ( EstadoJogo {
    tabuleiro = _, turno = _,
     reiBranco = _, reiPreto = _, pontoInicialSetado = pis,
-    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    pontoInicial = _, movimentoHabilitado = _
     }) = pis
 
 -- Obter o quadrado do Tabuleiro em determinado índice (0-63)
@@ -149,13 +149,13 @@ setQuadradoAt  ::  EstadoJogo  ->  Int  ->  Quadrado  ->  EstadoJogo
 setQuadradoAt ( EstadoJogo {
     tabuleiro = t, turno = turn, reiBranco = bRei,
     reiPreto = pRei, pontoInicialSetado = pis, movimentoHabilitado = mh,
-    pontoInicial = pti, pontosTabuleiro = pt}) posicao quadrado =
+    pontoInicial = pti}) posicao quadrado =
     ( \ (r1, _ : r2) (c1, _ : c2) ->
         ( EstadoJogo {
             tabuleiro = (r1 ++ (c1 ++ (quadrado : c2)) : r2),
             turno = turn, movimentoHabilitado = mh,
-            reiBranco = bRei, reiPreto = pRei, pontoIncialSetado = pis,
-            pontoInicial = pti, pontosTabuleiro = pt
+            reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
+            pontoInicial = pti
         })
     ) ( SplitAt (pos `div` 8 ) tabuleiro) ( splitAt (pos `mod` 8 ) (tabuleiro !! (pos `div` 8 )))
 
@@ -164,47 +164,47 @@ setReiPretoPos  ::  EstadoJogo  ->  Int  ->  EstadoJogo
 setReiPretoPos ( EstadoJogo {
     tabuleiro = t, turno = turn, reiBranco = bRei,
     reiPreto = pRei, pontoInicialSetado = pis, movimentoHabilitado = mh,
-    pontoInicial = pti, pontosTabuleiro = pt
+    pontoInicial = pti
     }) novaPosicao = ( EstadoJogo {
         tabuleiro = t, turno = turn, movimentoHabilitado = mh,
-        reiBranco = bRei, reiPreto = novaPosicao, pontoIncialSetado = pis,
-        pontoInicial = pti, pontosTabuleiro = pt
+        reiBranco = bRei, reiPreto = novaPosicao, pontoInicialSetado = pis,
+        pontoInicial = pti
     })
 
 -- Atualiza a posição do rei branco
-setReiBrancoPos  ::  EsatdoJogo  ->  Int  ->  EstadoJogo
+setReiBrancoPos  ::  EstadoJogo  ->  Int  ->  EstadoJogo
 setReiBrancoPos ( EstadoJogo {
    tabuleiro = t, turno = turn, reiBranco = bRei,
     reiPreto = pRei, pontoInicialSetado = pis, movimentoHabilitado = mh,
-    pontoInicial = pti, pontosTabuleiro = pt
+    pontoInicial = pti
     }) novaPosicao = ( EstadoJogo {
         tabuleiro = t, turno = turn, movimentoHabilitado = mh,
-        reiBranco = novaPosicao, reiPreto = pRei, pontoIncialSetado = pis,
-        pontoInicial = pti, pontosTabuleiro = pt
+        reiBranco = novaPosicao, reiPreto = pRei, pontoInicialSetado = pis,
+        pontoInicial = pti
     })
 
 -- Define se o ponto inicial é verdadeiro ou falso
-setPontoIncialSetado  ::  GameState  ->  Bool  ->  GameState
-setPontoIncialSetado ( GameState {
+setPontoInicialSetado  ::  EstadoJogo  ->  Bool  ->  EstadoJogo
+setPontoInicialSetado ( EstadoJogo {
     tabuleiro = t, turno = turn, reiBranco = bRei,
     reiPreto = pRei, pontoInicialSetado = pis, movimentoHabilitado = mh,
-    pontoInicial = pti, pontosTabuleiro = pt
+    pontoInicial = pti
     }) setPontSet = ( EstadoJogo {
         tabuleiro = t, turno = turn, movimentoHabilitado = mh,
-        reiBranco = bRei, reiPreto = pRei, pontoIncialSetado = setPontSet,
-        pontoInicial = pti, pontosTabuleiro = pt
+        reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = setPontSet,
+        pontoInicial = pti
     })
     
 -- Atualiza o ponto inical
-setPontoIncial  ::  EstadoJogo  ->  Int  ->  EstadoJogo
-setPontoInical ( EstadoJogo {
+setPontoInicial  ::  EstadoJogo  ->  Int  ->  EstadoJogo
+setPontoInicial ( EstadoJogo {
     tabuleiro = t, turno = turn, reiBranco = bRei,
     reiPreto = pRei, pontoInicialSetado = pis, movimentoHabilitado = mh,
-    pontoInicial = pti, pontosTabuleiro = pt
+    pontoInicial = pti
     }) novoPI = ( EstadoJogo {
         tabuleiro = t, turno = turn, movimentoHabilitado = mh,
-        reiBranco = bRei, reiPreto = pRei, pontoIncialSetado = pis,
-        pontoInicial = novoPI, pontosTabuleiro = pt
+        reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
+        pontoInicial = novoPI
     })
 
 -- Atualiza os pontos do tabuleiro
@@ -212,10 +212,10 @@ setPontosTabuleiro  ::  EstadoJogo  -> [ QuadradoTabuleiro ] ->  EstadoJogo
 setPontosTabuleiro ( EstadoJogo {
    tabuleiro = t, turno = turn, reiBranco = bRei,
     reiPreto = pRei, pontoInicialSetado = pis, movimentoHabilitado = mh,
-    pontoInicial = pti, pontosTabuleiro = pt
+    pontoInicial = pti
     }) novoPT = ( EstadoJogo {
         tabuleiro = t, turno = turn, movimentoHabilitado = mh,
-        reiBranco = bRei, reiPreto = pRei, pontoIncialSetado = pis,
+        reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
         pontoInicial = pti, pontosTabuleiro = novoPT
     })
 
@@ -223,11 +223,11 @@ setPontosTabuleiro ( EstadoJogo {
 setPontoCorTabuleiroAt  ::  EstadoJogo  ->  Int  -> ( GLfloat , GLfloat , GLfloat ) ->  EstadoJogo
 setPontoCorTabuleiroAt ( EstadoJogo {
     tabuleiro = t, turno = turn, reiBranco = bRei, movimentoHabilitado = mh,
-    reiPreto = pRei, pontoIncialSetado = pis,
+    reiPreto = pRei, pontoInicialSetado = pis,
     pontoInicial = pti, pontosTabuleiro = pt}) indice novaCor =
     ( \ (l1, (coords, _, p) : l2) -> 
         ( EstadoJogo {
-            tubalueiro = t, turno = turn, movimentoHabilitado = mh,
+            tabuleiro = t, turno = turn, movimentoHabilitado = mh,
             reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
             pontoInicial = pti, pontosTabuleiro = (l1 ++ [(coords, novaCor, p)] ++ l2)
         })
@@ -237,8 +237,8 @@ setPontoCorTabuleiroAt ( EstadoJogo {
 setPecaTabuleiroAt  ::  EstadoJogo  ->  Int  -> ( Int , GLfloat ) ->  EstadoJogo
 setPecaTabuleiroAt ( EstadoJogo {
     tabuleiro = t, turno = turn, reiBranco = bRei, movimentoHabilitado = mh,
-    reiPreto = pRei, pontoIncialSetado = pis,
-    pontoIncial = pti, pontosTabuleiro = bp}) indice novaPeca =
+    reiPreto = pRei, pontoInicialSetado = pis,
+    pontoInicial = pti, pontosTabuleiro = bp}) indice novaPeca =
     ( \ (l1, (coords, col, _) : l2) -> 
         ( EstadoJogo {
             tabuleiro = t, movimentoHabilitado = mh, turno = turn,
@@ -251,22 +251,22 @@ setPecaTabuleiroAt ( EstadoJogo {
 habilitarMovimento  ::  EstadoJogo ->  EstadoJogo
 habilitarMovimento( EstadoJogo {
     tabuleiro = t, turno = turn, reiBranco = bRei, movimentoHabilitado = _,
-    reiPreto = pRei, pontoIncialSetado = pis,
-    pontoInical = pti, pontosTabuleiro = pt})
+    reiPreto = pRei, pontoInicialSetado = pis,
+    pontoInicial = pti})
     = ( EstadoJogo {
-        tabueliro = t, turno = turn, movimentoHabilitado = True ,
-        reiBranco = bRei, reiPreto = pRei, pontoIncialSetado = pis,
-        pontoInicial = pti, pontosTabuleiro = pt
+        tabuleiro = t, turno = turn, movimentoHabilitado = True ,
+        reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
+        pontoInicial = pti
     })
 
 -- Desabilita movimento
 desabilitarMovimento  ::  EstadoJogo  ->  EstadoJogo
 desabilitarMovimento ( EstadoJogo {
      tabuleiro = t, turno = turn, reiBranco = bRei, movimentoHabilitado = _,
-    reiPreto = pRei, pontoIncialSetado = pis,
-    pontoInical = pti, pontosTabuleiro = pt})
+    reiPreto = pRei, pontoInicialSetado = pis,
+    pontoInicial = pti})
     = ( EstadoJogo {
-        tabueliro = t, turno = turn, movimentoHabilitado = False ,
-        reiBranco = bRei, reiPreto = pRei, pontoIncialSetado = pis,
-        pontoInicial = pti, pontosTabuleiro = pt
+        tabuleiro = t, turno = turn, movimentoHabilitado = False ,
+        reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
+        pontoInicial = pti
     })

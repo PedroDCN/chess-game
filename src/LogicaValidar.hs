@@ -80,23 +80,21 @@ verificaMovimentoDama estado inicio fim =
     (inicio /= fim) && 
     ((verificaMovimentoTorre estado inicio fim) || (verificaMovimentoBispo estado inicio fim))
 
--- pegaQuadrado (retorna uma peça que está no quadrado ou Vazio)
--- pegaQuadradoCor (retorna a cor da peça no quadrado passado pro parâmetro)
 verificaMovimentoPeao :: EstadoJogo -> Int -> Int -> CorPeca -> Bool
 verificaMovimentoPeao estado inicio fim cor
     | (peca == Vazio) || (linhaInicio == linhaFim) = False
-    | (colunaInicio == colunaFim) = (pegaQuadrado estado fim) == Vazio
+    | (colunaInicio == colunaFim) = (getQuadradoAt estado fim) == Vazio
         && ((linhaInicio - linhaFim == 1)
             || (
                 linhaInicio == 6
                 && (linhaInicio - linhaFim) == 2
-                && (pegaQuadrado estado (40 + colunaInicio)) == Vazio
+                && (getQuadradoAt estado (40 + colunaInicio)) == Vazio
             )
         )
     | otherwise = (
         (abs (colunaInicio - colunaFim)) == 1
         && (linhaInicio - linhaFim) == 1
-        && (pegaQuadradoCor (pegaQuadrado estado fim)) == corOposta
+        && (getCorQuadrado (getQuadradoAt estado fim)) == corOposta
     )
     where
         linhaInicio  = inicio `div` 8
@@ -104,9 +102,8 @@ verificaMovimentoPeao estado inicio fim cor
         colunaInicio = inicio `mod` 8
         colunaFim    = fim    `mod` 8
         corOposta    = if cor == Branco then Preto else Branco
-        peca         = pegaQuadrado estado inicio
+        peca         = getQuadradoAt estado inicio
 
--- Precisamos criar as funções do tabuleiro para pegar informações da peça (Cor e Tipo) que está no quadrado
 verificaMovimento :: EstadoJogo -> Int -> Int -> Bool
 verificaMovimento estado inicio fim
     | not movimentoValido = False
@@ -119,20 +116,19 @@ verificaMovimento estado inicio fim
         Torre     -> (verificaMovimentoTorre estado inicio fim)
         otherwise -> False
     where
-        quadrado        = (pegaQuadrado estado inicio)
-        tipoPeca        = pegaQuadradoTipo quadrado
-        corPeca         = pegaQuadradoCor quadrado
-        turno           = pegaTurno estado
+        quadrado        = getQuadradoAt estado inicio
+        tipoPeca        = getQuadradoAt quadrado
+        corPeca         = getCorQuadrado quadrado
+        turno           = getTurno estado
         movimentoValido = (inicio >= 0 && inicio <= 63 && fim >= 0 && fim <= 63)
             && (
                 ((turno == Humano) && (corPeca == Branco))
                 || ((turno == Computador) && (corPeca == Preto))
                )
-            && (corPeca /= (pegaQuadradoCor (pegaQuadrado estado fim)))
+            && (corPeca /= (getCorQuadrado (getQuadradoAt estado fim)))
 
--- Necessita de implementação em outra classe (método de pegar o quadrado no tabuleiro)
 estaVazio :: EstadoJogo -> Int -> Bool
-estaVazio estado indice = ((pegaQuadrado estado indice) == Vazio)
+estaVazio estado indice = ((getQuadradoAt estado indice) == Vazio)
 
 -- Verifica se é um xeque-mate (xeque, mate)
 verificaXequeMate :: EstadoJogo -> CorPeca -> (Bool, Bool)
@@ -147,11 +143,11 @@ verificaXequeMate estado cor =
                 )
             ) $ filter (\valor -> valor >= 0) (primeiraLista ++ segundaLista)
         ) $ pegaPosicoesXeque estado (inverteCor cor) False quadradoRei
-    ) $ pegaPosicaoRei estado cor
+    ) $ getReiPos estado cor
 
 -- Checa se é um Xeque
 estaEmXeque :: EstadoJogo -> CorPeca -> Bool
-estaEmXeque estado cor = verificaXeque estado cor False (pegaPosicaoRei estado cor)
+estaEmXeque estado cor = verificaXeque estado cor False (getReiPos estado cor)
 
 -- Computa a lista de todas as posições de xeque
 verificaXeque :: EstadoJogo -> CorPeca -> Bool -> Int -> Bool
@@ -168,7 +164,7 @@ podeMoverRei :: EstadoJogo -> CorPeca -> Int -> Bool
 podeMoverRei estado cor quadrado =
     let l = quadrado `div` 8 in -- l (linha)
     let c = quadrado `mod` 8 in -- c (coluna)
-    let lista = filter (\valor -> (pegaQuadradoCor estado valor) /= cor) $ map pegaQuadradoIndice [(ll,cc) | ll <- [l-1, l+1], cc <- [c-1, c+1], ll >= 0, cc >= 0, ll <= 7, cc <= 7, (ll,cc) /= (l,c)] in
+    let lista = filter (\valor -> (getCorQuadrado estado valor) /= cor) $ map pegaQuadradoIndice [(ll,cc) | ll <- [l-1, l+1], cc <- [c-1, c+1], ll >= 0, cc >= 0, ll <= 7, cc <= 7, (ll,cc) /= (l,c)] in
     not (foldr (&&) True (map (verificaXeque estado cor True) lista))
 
 -- Tenta bloquear ou atacar a peça que está atacando o rei
