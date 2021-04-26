@@ -1,5 +1,7 @@
 module LogicaJogar where
 
+import Tipos
+
 {--
 -- função que, dada uma posição no tabuleiro e o estado do tabuleiro atual,
 -- retorna todos os possíveis movimentos (lista de Movimentos)
@@ -24,3 +26,12 @@ module LogicaJogar where
 -- inicial, cobrir também este caso no código), não tem necessidade de verificar se o movimento
 -- dele para o final do tabuleiro é válido, e ainda você não pode mover ele caso esteja em cheque por exemplo.
 --}
+
+listaMovimentosRei :: Int -> [Int] -> [Int]
+listaMovimentosRei _ [] = []
+listaMovimentosRei inicio (x:xs) =
+    if (inicio`div`8) == (x`div`8) && (abs ((inicio`mod`8) - (x`mod`8))) == 1 then [x] ++ (listaMovimentosRei inicio xs)
+    else if (inicio`mod`8) == (x`mod`8) && (abs ((inicio`div`8) - (x`div`8))) == 1 then [x] ++ (listaMovimentosRei inicio xs)
+    else if (abs ((inicio`div`8) - (x`div`8))) == 1 && (abs ((inicio`mod`8) - (x`mod`8))) == 1 then [x] ++ (listaMovimentosRei inicio xs)
+    else (listaMovimentosRei inicio xs)
+    where (x:xs) = [0..63]

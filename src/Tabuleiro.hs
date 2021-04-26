@@ -63,7 +63,7 @@ getTabuleiro  ::  EstadoJogo  ->  Tabuleiro
 getTabuleiro ( EstadoJogo {
     tabuleiro = t, turno = _,
     reiBranco = _, reiPreto = _, pontoInicialSetado = _,
-    pontoInicial = _, pontosTabuleiro = _, movimentoHabilitado = _
+    pontoInicial = _, movimentoHabilitado = _
     }) = t
 
 -- Obter o Turno
@@ -104,14 +104,6 @@ getPontoInicial ( EstadoJogo {
     pontoInicial = pti, movimentoHabilitado = _
     }) = pti
 
--- Obter os Pontos do Tabuleiro
-getPontosTabuleiro  ::  EstadoJogo -> [ QuadradoTabuleiro ]
-getPontosTabuleiro ( EstadoJogo {
-    tabuleiro = _, turno = _,
-    reiBranco = _, reiPreto = _, pontoInicialSetado = _,
-    pontoInicial= _, pontosTabuleiro = pt, movimentoHabilitado = _
-    }) = pt
-
 -- Obter o Movimento Habilitado
 getMovimentoHabilitado  ::  EstadoJogo  ->  Bool
 getMovimentoHabilitado ( EstadoJogo {
@@ -132,17 +124,13 @@ ehPontoInicialSetado ( EstadoJogo {
 getQuadradoAt  ::  EstadoJogo  ->  Int  ->  Quadrado
 getQuadradoAt estado indice = ( \ tabuleiro linha coluna ->
         ((tabuleiro !! linha) !! coluna)
-    ) (getTabuleiro estado) (índice `div`  8 ) (índice `mod`  8 )
+    ) (getTabuleiro estado) (indice `div`  8 ) (indice `mod`  8 )
 
 -- Obter a cor do quadrado do Tabuleiro em determinado índice (0-63)
 getCorQuadradoAt  ::  EstadoJogo  ->  Int  ->  CorPeca
 getCorQuadradoAt estado indice = ( \ tabuleiro linha coluna ->
         getCorQuadrado ((tabuleiro !! linha) !! coluna)
-    ) (getTabuleiro) (índice `div`  8 ) (índice `mod`  8 )
-
-
-getPecaTabuleiroAt  ::  EstadoJogo  ->  Int  -> ( Int , GLfloat )
-getPecaTabuleiroAt estado indice = ( \ (_, _, p) -> p) ((getPontosTabuleiro estado) !! indice)
+    ) (getTabuleiro estado) (indice `div`  8 ) (indice `mod`  8 )
 
 -- Atualiza o quadrado em um índice
 setQuadradoAt  ::  EstadoJogo  ->  Int  ->  Quadrado  ->  EstadoJogo
@@ -157,7 +145,7 @@ setQuadradoAt ( EstadoJogo {
             reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
             pontoInicial = pti
         })
-    ) ( SplitAt (pos `div` 8 ) tabuleiro) ( splitAt (pos `mod` 8 ) (tabuleiro !! (pos `div` 8 )))
+    ) ( splitAt (posicao `div` 8 ) t) ( splitAt (posicao `mod` 8 ) (t !! (posicao `div` 8 )))
 
 -- Atualiza a posição do rei preto
 setReiPretoPos  ::  EstadoJogo  ->  Int  ->  EstadoJogo
@@ -206,46 +194,6 @@ setPontoInicial ( EstadoJogo {
         reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
         pontoInicial = novoPI
     })
-
--- Atualiza os pontos do tabuleiro
-setPontosTabuleiro  ::  EstadoJogo  -> [ QuadradoTabuleiro ] ->  EstadoJogo
-setPontosTabuleiro ( EstadoJogo {
-   tabuleiro = t, turno = turn, reiBranco = bRei,
-    reiPreto = pRei, pontoInicialSetado = pis, movimentoHabilitado = mh,
-    pontoInicial = pti
-    }) novoPT = ( EstadoJogo {
-        tabuleiro = t, turno = turn, movimentoHabilitado = mh,
-        reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
-        pontoInicial = pti, pontosTabuleiro = novoPT
-    })
-
--- Define a cor do ponto do tabuleiro em determinado índice
-setPontoCorTabuleiroAt  ::  EstadoJogo  ->  Int  -> ( GLfloat , GLfloat , GLfloat ) ->  EstadoJogo
-setPontoCorTabuleiroAt ( EstadoJogo {
-    tabuleiro = t, turno = turn, reiBranco = bRei, movimentoHabilitado = mh,
-    reiPreto = pRei, pontoInicialSetado = pis,
-    pontoInicial = pti, pontosTabuleiro = pt}) indice novaCor =
-    ( \ (l1, (coords, _, p) : l2) -> 
-        ( EstadoJogo {
-            tabuleiro = t, turno = turn, movimentoHabilitado = mh,
-            reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
-            pontoInicial = pti, pontosTabuleiro = (l1 ++ [(coords, novaCor, p)] ++ l2)
-        })
-    ) $  splitAt indice pt
-
--- Define os pontos do tabuleiro em determinado índice
-setPecaTabuleiroAt  ::  EstadoJogo  ->  Int  -> ( Int , GLfloat ) ->  EstadoJogo
-setPecaTabuleiroAt ( EstadoJogo {
-    tabuleiro = t, turno = turn, reiBranco = bRei, movimentoHabilitado = mh,
-    reiPreto = pRei, pontoInicialSetado = pis,
-    pontoInicial = pti, pontosTabuleiro = bp}) indice novaPeca =
-    ( \ (l1, (coords, col, _) : l2) -> 
-        ( EstadoJogo {
-            tabuleiro = t, movimentoHabilitado = mh, turno = turn,
-            reiBranco = bRei, reiPreto = pRei, pontoInicialSetado = pis,
-            pontoInicial = pti, pontosTabuleiro = (l1 ++ [(coords, col, novaPeca)] ++ l2)
-        })
-    ) $  splitAt indice pt
 
 -- Habilita movimento
 habilitarMovimento  ::  EstadoJogo ->  EstadoJogo

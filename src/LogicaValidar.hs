@@ -28,6 +28,91 @@ import Data.List
 -- - você não pode fazer uma jogada que deixe seu rei em cheque
 --}
 
+-- LÓGICA JOGAR 
+listaMovimentosRei :: EstadoJogo -> Int -> [Int] -> [Int]
+listaMovimentosRei estado _ [] = []
+listaMovimentosRei estado inicio (x:xs) =
+    if (inicio`div`8) == (x`div`8) && (abs ((inicio`mod`8) - (x`mod`8))) == 1 then [x] ++ (listaMovimentosRei estado inicio xs)
+    else if (inicio`mod`8) == (x`mod`8) && (abs ((inicio`div`8) - (x`div`8))) == 1 then [x] ++ (listaMovimentosRei estado inicio xs)
+    else if (abs ((inicio`div`8) - (x`div`8))) == 1 && (abs ((inicio`mod`8) - (x`mod`8))) == 1 then [x] ++ (listaMovimentosRei estado inicio xs)
+    else (listaMovimentosRei estado inicio xs)
+
+listaMovimentosDama :: EstadoJogo -> Int -> [Int] -> [Int]
+listaMovimentosDama estado _ [] = []
+listaMovimentosDama estado inicio (x:xs) =
+    if (inicio /= x) && ((verificaMovimentoTorre estado inicio x) || (verificaMovimentoBispo estado inicio x)) then [x] ++ (listaMovimentosDama estado inicio xs)
+    else (listaMovimentosDama estado inicio xs)
+
+listaMovimentosTorre :: EstadoJogo -> Int -> Int -> Bool
+listaMovimentosTorre estado inicio fim
+    | (inicio == fim) = False
+    | (colunaInicio == colunaFim) = ((inicio > fim)
+        && ((foldr (&&) True (map (estaVazio estado) [(inicio - 8),(inicio - 16)..(fim + 8)]))))
+        || ((not (inicio > fim))
+        && (foldr (&&) True (map (estaVazio estado) [(inicio + 8),(inicio + 16)..(fim - 8)])))
+    | (linhaInicio == linhaFim) = ((inicio > fim)
+        && (foldr (&&) True (map (estaVazio estado) [(inicio - 1),(inicio - 2)..(fim + 1)])))
+        || ((not (inicio > fim))
+        && (foldr (&&) True (map (estaVazio estado) [(inicio + 1),(inicio + 2)..(fim - 1)])))
+    | otherwise = False
+    where
+        linhaInicio  = inicio `div` 8
+        linhaFim     = fim    `div` 8
+        colunaInicio = inicio `mod` 8
+        colunaFim    = fim    `mod` 8
+
+listaMovimentosCavalo :: EstadoJogo -> Int -> [Int] -> [Int]
+listaMovimentosCavalo estado _ [] = []
+listaMovimentosCavalo estado inicio (x:xs) =
+    if (linhasMovidas /= 0) && (colunasMovidas /= 0) && ((linhasMovidas + colunasMovidas) == 3) then [x] ++ (listaMovimentosCavalo estado inicio xs)
+    else (listaMovimentosCavalo estado inicio xs)
+    where 
+        linhasMovidas = (abs $ (inicio `div` 8) - (x `div` 8)) 
+        colunasMovidas = (abs $ (inicio `mod` 8) - (x `mod` 8))
+
+listaMovimentoBispo :: EstadoJogo -> Int -> Int -> Bool
+listaMovimentoBispo estado inicio fim
+    | (inicio == fim) || ((abs (linhaInicio - linhaFim)) /= (abs (colunaInicio - colunaFim))) = False
+    | ((linhaInicio - linhaFim) == (colunaFim - colunaInicio)) =
+        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 7), (inicio - 14)..(fim + 7)])))
+    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 7), (fim - 14)..(inicio + 7)])))
+    | otherwise =
+        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 9), (inicio - 18)..(fim + 9)])))
+    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 9), (fim - 18)..(inicio + 9)])))
+    where
+        linhaInicio  = inicio `div` 8
+        linhaFim     = fim    `div` 8
+        colunaInicio = inicio `mod` 8
+        colunaFim    = fim    `mod` 8
+
+listaMovimentosPeao :: EstadoJogo -> Int -> Int -> CorPeca -> Bool
+listaMovimentosPeao estado inicio fim cor
+    | (peca == Vazio) || (linhaInicio == linhaFim) = False
+    | (colunaInicio == colunaFim) = (getQuadradoAt estado fim) == Vazio
+        && ((linhaInicio - linhaFim == 1)
+            || (
+                linhaInicio == 6
+                && (linhaInicio - linhaFim) == 2
+                && (getQuadradoAt estado (40 + colunaInicio)) == Vazio
+            )
+        )
+    | otherwise = (
+        (abs (colunaInicio - colunaFim)) == 1
+        && (linhaInicio - linhaFim) == 1
+        && (getCorQuadrado (getQuadradoAt estado fim)) == corOposta
+    )
+    where
+        linhaInicio  = inicio `div` 8
+        linhaFim     = fim    `div` 8
+        colunaInicio = inicio `mod` 8
+        colunaFim    = fim    `mod` 8
+        corOposta    = if cor == Branco then Preto else Branco
+        peca         = getQuadradoAt estado inicio
+
+
+-- FIM LÓGICA JOGAR
+
+
 verificaMovimentoRei :: EstadoJogo -> Int -> Int -> Bool
 verificaMovimentoRei estado inicio fim =
     (\ linhaInicio colunaInicio linhaFim colunaFim ->
@@ -108,7 +193,7 @@ verificaMovimento :: EstadoJogo -> Int -> Int -> Bool
 verificaMovimento estado inicio fim
     | not movimentoValido = False
     | otherwise = case tipoPeca of
-        Peao      -> (verificaMovimentoPeao estado inicio fim)
+        Peao      -> (verificaMovimentoPeao estado inicio fim corPeca)
         Cavalo    -> (verificaMovimentoCavalo estado inicio fim)
         Bispo     -> (verificaMovimentoBispo estado inicio fim)
         Rei       -> (verificaMovimentoRei estado inicio fim)
@@ -117,7 +202,7 @@ verificaMovimento estado inicio fim
         otherwise -> False
     where
         quadrado        = getQuadradoAt estado inicio
-        tipoPeca        = getQuadradoAt quadrado
+        tipoPeca        = getTipoQuadrado quadrado
         corPeca         = getCorQuadrado quadrado
         turno           = getTurno estado
         movimentoValido = (inicio >= 0 && inicio <= 63 && fim >= 0 && fim <= 63)
