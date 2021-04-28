@@ -334,3 +334,229 @@ verificaAtaqueDiagonalInferiorDireito estado cor linhaInicio fim colunaInicio =
         let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio+1,linhaInicio+2..linhaFim], cc <- [colunaInicio+1,colunaInicio+2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
             foldr (||) False (map (verificaXeque estado cor False) lista)
     ) (fim `div` 8) (fim `mod` 8)
+
+verificaPeaoXeque7 :: EstadoJogo -> CorPeca -> Int -> Int
+verificaPeaoXeque7 estado cor celula
+    | verificaAtaqueCimaAbaixo
+        && (((celula-7) >= 0) && (getQuadradoAt estado (celula-7)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
+        = celula-7
+    | (not verificaAtaqueCimaAbaixo)
+        && (((celula+7) <= 63) && (getQuadradoAt estado (celula+7)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
+        = celula+7
+    | otherwise = -1
+    where
+        minhaCor = if (getTurno estado)==JogadorBranco then Branco else Preto
+        verificaAtaqueCimaAbaixo = (minhaCor/=cor)
+
+verificaPeaoXeque9 :: EstadoJogo -> CorPeca -> Int -> Int
+verificaPeaoXeque9 estado cor celula
+    | verificaAtaqueCimaAbaixo
+        && (((celula-9) >= 0) && (getQuadradoAt estado (celula-9)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
+        = celula-9
+    | (not verificaAtaqueCimaAbaixo)
+        && (((celula+9) <= 63) && (getQuadradoAt estado (celula+9)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
+        = celula+9
+    | otherwise = -1
+    where
+        minhaCor = if (getTurno estado)==JogadorBranco then Branco else Preto
+        verificaAtaqueCimaAbaixo = (minhaCor/=cor)
+
+verificaXequeColunaEsquerda :: EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaXequeColunaEsquerda estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    | (getTipoQuadrado(getQuadradoAt estado celula)) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `mod` 8 == 0 then -1
+        else verificaXequeColunaEsquerda estado cor False (celula-1)
+    | (primeiraIteracao && celula `mod` 8 /= 0) = verificaXequeColunaEsquerda estado cor False (celula-1)
+    | (celula >= 0) =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
+             if (celula `mod` 8) /= 0 then verificaXequeColunaEsquerda estado cor False (celula-1)
+             else -1
+        else
+             if ((getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama) then celula
+             else -1
+    | otherwise = -1
+
+verificaXequeColunaDireita :: EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaXequeColunaDireita estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    | (getTipoQuadrado(getQuadradoAt estado celula)) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `mod` 8 == 7 then -1
+        else verificaXequeColunaDireita estado cor False (celula+1)
+    | (primeiraIteracao && celula `mod` 8 /= 7) = verificaXequeColunaDireita estado cor False (celula+1)
+    | (celula <= 63) =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
+             if (celula `mod` 8) /= 7 then verificaXequeColunaDireita estado cor False (celula+1)
+             else -1
+        else
+             if ((getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama) then celula
+             else -1
+    | otherwise = -1
+
+verificaXequeLinhaAbaixo ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaXequeLinhaAbaixo estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    | (getTipoQuadrado(getQuadradoAt estado celula)) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `div` 8 == 7 then -1
+        else verificaXequeLinhaAbaixo estado cor False (celula+8)
+    | (primeiraIteracao) = verificaXequeLinhaAbaixo estado cor False (celula+8)
+    | (celula `div` 8) < 8 =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if getCorQuadrado (getQuadradoAt estado celula) == SemCor then
+             if (celula `div` 8) /= 7 then verificaXequeLinhaAbaixo estado cor False (celula+8)
+             else -1
+        else
+             if (getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
+             else -1
+    | otherwise = -1
+
+verificaXequeLinhaAcima ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaXequeLinhaAcima estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `div` 8 == 0 then -1
+        else verificaXequeLinhaAcima estado cor False (celula-8)
+    | (primeiraIteracao) = verificaXequeLinhaAcima estado cor False (celula-8)
+    | ((celula `div` 8) < 8) =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if getCorQuadrado (getQuadradoAt estado celula) == SemCor then
+             if (celula `div` 8) /= 0 then verificaXequeLinhaAcima estado cor False (celula-8)
+             else -1
+        else
+             if (getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
+             else -1
+    | otherwise = -1
+
+verificaDiagonalSuperiorEsquerda ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaDiagonalSuperiorEsquerda estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `mod` 8 == 0 || celula `div` 8 == 0 then -1
+        else verificaDiagonalSuperiorEsquerda estado cor False (celula-9)
+    | (primeiraIteracao && (celula `mod` 8) /= 0 && celula `div` 8 /= 0) = verificaDiagonalSuperiorEsquerda estado cor False (celula-9)
+    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
+             if (celula `mod` 8) /= 0 && celula `div` 8 /= 0 then verificaDiagonalSuperiorEsquerda estado cor False (celula-9)
+             else -1
+        else
+             if (getTipoQuadrado (getQuadradoAt estado celula)) == Bispo || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
+             else -1
+    | otherwise = -1
+
+verificaDiagonalInferiorEsquerda ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaDiagonalInferiorEsquerda estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `mod` 8 == 0 || celula `div` 8 == 7 then -1
+        else verificaDiagonalInferiorEsquerda estado cor False (celula+7)
+    | (primeiraIteracao && (celula `mod` 8) /= 0 && celula `div` 8 /= 7) = verificaDiagonalInferiorEsquerda estado cor False (celula+7)
+    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
+             if (celula `mod` 8) /= 0 && celula `div` 8 /= 7 then verificaDiagonalInferiorEsquerda estado cor False (celula+7)
+             else -1
+        else
+             if (getTipoQuadrado (getQuadradoAt estado celula) == Bispo) || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
+             else -1
+    | otherwise = -1
+
+verificaDiagonalSuperiorDireita ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaDiagonalSuperiorDireita estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `mod` 8 == 7 || celula `div` 8 == 0 then -1
+        else verificaDiagonalSuperiorDireita estado cor False (celula-7)
+    | (primeiraIteracao && (celula `mod` 8) /= 7 && celula `div` 8 /= 0) = verificaDiagonalSuperiorDireita estado cor False (celula-7)
+    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
+             if (celula `mod` 8) /= 7 && celula `div` 8 /= 0 then verificaDiagonalSuperiorDireita estado cor False (celula-7)
+             else -1
+        else
+             if (getTipoQuadrado (getQuadradoAt estado celula) == Bispo) || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
+             else -1
+    | otherwise = -1
+
+verificaDiagonalInferiorDireita ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
+verificaDiagonalInferiorDireita estado cor primeiraIteracao celula
+    | celula<0 || celula>63 = -1
+    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
+        if celula `mod` 8 == 7 || celula `div` 8 == 7 then -1
+        else verificaDiagonalInferiorDireita estado cor False (celula+9)
+    | (primeiraIteracao && (celula `mod` 8) /= 7 && celula `div` 8 /= 7) = verificaDiagonalInferiorDireita estado cor False (celula+9)
+    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
+        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
+        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
+             if (celula `mod` 8) /= 7 && celula `div` 8 /= 7 then verificaDiagonalInferiorDireita estado cor False (celula+9)
+             else -1
+        else
+             if (getTipoQuadrado (getQuadradoAt estado celula) == Bispo) || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
+             else -1
+    | otherwise = -1
+
+verificaXequeCavaloSuperiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
+verificaXequeCavaloSuperiorEsquerdo estado cor celula
+    | celula<0 || celula>63 = -1
+    | (((celula-16) `div` 8)  >=0 && ((celula `mod` 8)-1) >= 0) =
+           if getCorQuadrado (getQuadradoAt estado (celula -17)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula-17))) == Cavalo then (celula-17)
+           else -1
+    | otherwise = -1
+
+verificaXequeCavaloSuperiorCentralEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
+verificaXequeCavaloSuperiorCentralEsquerdo estado cor celula
+    | celula<0 || celula>63 = -1
+    | (((celula-8) `div` 8) >=0 && ((celula `mod` 8)-2) >=0) =
+           if getCorQuadrado (getQuadradoAt estado (celula-10)) == cor && getTipoQuadrado (getQuadradoAt estado (celula-10)) == Cavalo then (celula-10)
+           else -1
+    | otherwise = -1
+
+verificaXequeCavaloInferiorCentralEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
+checkLMidLeftHorseCheck estado cor celula
+    | celula<0 || celula>63 = -1
+    | (((celula `mod` 8) - 2) >=0 && (celula+8) `div` 8 <=7) =
+           if getCorQuadrado (getQuadradoAt estado (celula+6)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+6))) == Cavalo then (celula+6)
+           else -1
+    | otherwise = -1
+
+verificaXequeCavaloInferiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
+verificaXequeCavaloInferiorEsquerdo estado cor celula
+    | celula<0 || celula>63 = -1
+    | (((celula+16) `div` 8) <=7 && ((celula `mod` 8)-1) >=0) =
+           if getCorQuadrado (getQuadradoAt estado (celula+15)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+15))) == Cavalo then (celula+15)
+           else -1
+    | otherwise = -1
+
+verificaXequeCavaloSuperiorDireito ::  EstadoJogo -> CorPeca -> Int -> Int
+verificaXequeCavaloSuperiorDireito estado cor celula
+    | celula<0 || celula>63 = -1
+    | ((celula-16) `div` 8 >=0 && ((celula `mod` 8)+1)<= 7) =
+          if getCorQuadrado (getQuadradoAt estado (celula -15)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula-15))) == Cavalo then (celula-15)
+          else -1
+    | otherwise = -1
+
+verificaXequeCavaloSuperiorCentralDireito ::  EstadoJogo -> CorPeca -> Int -> Int
+checkUMidRightHorseCheck estado cor celula
+    | celula<0 || celula>63 = -1
+    | ((celula-8) `div` 8 >=0 && ((celula `mod` 8)+2) <= 7) =
+           if getCorQuadrado (getQuadradoAt estado (celula-6)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula-6))) == Cavalo then (celula-6)
+           else -1
+    | otherwise = -1
+
+verificaXequeCavaloInferiorCentralDireito ::  EstadoJogo -> CorPeca -> Int -> Int
+verificaXequeCavaloInferiorCentralDireito estado cor celula
+    | celula<0 || celula>63 = -1
+    | (((celula `mod` 8)+2) >=0 && (celula+8) `div` 8 <=7) =
+            if getCorQuadrado (getQuadradoAt estado (celula+10)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+10))) == Cavalo then (celula+10)
+            else -1
+    | otherwise = -1
+
+verificaXequeCavaloInferiorDireito :: EstadoJogo -> CorPeca -> Int -> Int
+verificaXequeCavaloInferiorDireito estado cor celula
+    | celula<0 || celula>63 = -1
+    | ((celula+16) `div` 8 <=7 && ((celula `mod` 8)+1) <=7) =
+            if getCorQuadrado (getQuadradoAt estado (celula+17)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+17))) == Cavalo then (celula+17)
+            else -1
+    | otherwise = -1
