@@ -1,4 +1,8 @@
 module Main where
 
+import Graphics.UI.Threepenny.Core
+import qualified GUI
+
 main :: IO ()
-main = putStrLn "chess"
+main = do
+        startGUI defaultConfig GUI.config
