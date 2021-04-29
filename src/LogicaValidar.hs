@@ -32,83 +32,39 @@ import Data.List
 listaMovimentosRei :: EstadoJogo -> Int -> [Int] -> [Int]
 listaMovimentosRei estado _ [] = []
 listaMovimentosRei estado inicio (x:xs) =
-    if (inicio`div`8) == (x`div`8) && (abs ((inicio`mod`8) - (x`mod`8))) == 1 then [x] ++ (listaMovimentosRei estado inicio xs)
-    else if (inicio`mod`8) == (x`mod`8) && (abs ((inicio`div`8) - (x`div`8))) == 1 then [x] ++ (listaMovimentosRei estado inicio xs)
-    else if (abs ((inicio`div`8) - (x`div`8))) == 1 && (abs ((inicio`mod`8) - (x`mod`8))) == 1 then [x] ++ (listaMovimentosRei estado inicio xs)
+    if (verificaMovimentoRei estado inicio x) then [x] ++ (listaMovimentosRei estado inicio xs)
     else (listaMovimentosRei estado inicio xs)
 
 listaMovimentosDama :: EstadoJogo -> Int -> [Int] -> [Int]
 listaMovimentosDama estado _ [] = []
 listaMovimentosDama estado inicio (x:xs) =
-    if (inicio /= x) && ((verificaMovimentoTorre estado inicio x) || (verificaMovimentoBispo estado inicio x)) then [x] ++ (listaMovimentosDama estado inicio xs)
+    if (verificaMovimentoDama estado inicio x) then [x] ++ (listaMovimentosDama estado inicio xs)
     else (listaMovimentosDama estado inicio xs)
 
-listaMovimentosTorre :: EstadoJogo -> Int -> Int -> Bool
-listaMovimentosTorre estado inicio fim
-    | (inicio == fim) = False
-    | (colunaInicio == colunaFim) = ((inicio > fim)
-        && ((foldr (&&) True (map (estaVazio estado) [(inicio - 8),(inicio - 16)..(fim + 8)]))))
-        || ((not (inicio > fim))
-        && (foldr (&&) True (map (estaVazio estado) [(inicio + 8),(inicio + 16)..(fim - 8)])))
-    | (linhaInicio == linhaFim) = ((inicio > fim)
-        && (foldr (&&) True (map (estaVazio estado) [(inicio - 1),(inicio - 2)..(fim + 1)])))
-        || ((not (inicio > fim))
-        && (foldr (&&) True (map (estaVazio estado) [(inicio + 1),(inicio + 2)..(fim - 1)])))
-    | otherwise = False
-    where
-        linhaInicio  = inicio `div` 8
-        linhaFim     = fim    `div` 8
-        colunaInicio = inicio `mod` 8
-        colunaFim    = fim    `mod` 8
+listaMovimentosTorre :: EstadoJogo -> Int -> [Int] -> [Int]
+listaMovimentosTorre estado _ [] = []
+listaMovimentosTorre estado inicio (x:xs) =
+    if (verificaMovimentoTorre estado inicio x) then [x] ++ (listaMovimentosTorre estado inicio xs)
+    else (listaMovimentosTorre estado inicio xs)
 
 listaMovimentosCavalo :: EstadoJogo -> Int -> [Int] -> [Int]
 listaMovimentosCavalo estado _ [] = []
 listaMovimentosCavalo estado inicio (x:xs) =
-    if (linhasMovidas /= 0) && (colunasMovidas /= 0) && ((linhasMovidas + colunasMovidas) == 3) then [x] ++ (listaMovimentosCavalo estado inicio xs)
+    if (verificaMovimentoCavalo estado inicio x) then [x] ++ (listaMovimentosCavalo estado inicio xs)
     else (listaMovimentosCavalo estado inicio xs)
-    where 
-        linhasMovidas = (abs $ (inicio `div` 8) - (x `div` 8)) 
-        colunasMovidas = (abs $ (inicio `mod` 8) - (x `mod` 8))
 
-listaMovimentoBispo :: EstadoJogo -> Int -> Int -> Bool
-listaMovimentoBispo estado inicio fim
-    | (inicio == fim) || ((abs (linhaInicio - linhaFim)) /= (abs (colunaInicio - colunaFim))) = False
-    | ((linhaInicio - linhaFim) == (colunaFim - colunaInicio)) =
-        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 7), (inicio - 14)..(fim + 7)])))
-    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 7), (fim - 14)..(inicio + 7)])))
-    | otherwise =
-        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 9), (inicio - 18)..(fim + 9)])))
-    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 9), (fim - 18)..(inicio + 9)])))
-    where
-        linhaInicio  = inicio `div` 8
-        linhaFim     = fim    `div` 8
-        colunaInicio = inicio `mod` 8
-        colunaFim    = fim    `mod` 8
+listaMovimentosBispo :: EstadoJogo -> Int -> [Int] -> [Int]
+listaMovimentosBispo estado _ [] = []
+listaMovimentosBispo estado inicio (x:xs) =
+    if (verificaMovimentoBispo estado inicio x) then [x] ++ (listaMovimentosBispo estado inicio xs)
+    else (listaMovimentosBispo estado inicio xs)
+    
 
-listaMovimentosPeao :: EstadoJogo -> Int -> Int -> CorPeca -> Bool
-listaMovimentosPeao estado inicio fim cor
-    | (peca == Vazio) || (linhaInicio == linhaFim) = False
-    | (colunaInicio == colunaFim) = (getQuadradoAt estado fim) == Vazio
-        && ((linhaInicio - linhaFim == 1)
-            || (
-                linhaInicio == 6
-                && (linhaInicio - linhaFim) == 2
-                && (getQuadradoAt estado (40 + colunaInicio)) == Vazio
-            )
-        )
-    | otherwise = (
-        (abs (colunaInicio - colunaFim)) == 1
-        && (linhaInicio - linhaFim) == 1
-        && (getCorQuadrado (getQuadradoAt estado fim)) == corOposta
-    )
-    where
-        linhaInicio  = inicio `div` 8
-        linhaFim     = fim    `div` 8
-        colunaInicio = inicio `mod` 8
-        colunaFim    = fim    `mod` 8
-        corOposta    = if cor == Branco then Preto else Branco
-        peca         = getQuadradoAt estado inicio
-
+listaMovimentosPeao :: EstadoJogo -> Int -> [Int] -> CorPeca -> [Int]
+listaMovimentosPeao estado _ [] _ = []
+listaMovimentosPeao estado inicio (x:xs) cor =
+    if (verificaMovimentoPeao estado inicio x cor) then [x] ++ (listaMovimentosPeao estado inicio xs cor)
+    else (listaMovimentosPeao estado inicio xs cor)
 
 -- FIM LÓGICA JOGAR
 
