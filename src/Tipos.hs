@@ -27,6 +27,8 @@ data EstadoJogo = EstadoJogo {
 } deriving (Show)
 
 -- Notação para as peças
+-- b = branco
+-- p = preto
 bPeao, bCavalo, bBispo, bDama, bRei, bTorre, pPeao, pCavalo, pBispo, pDama, pRei, pTorre :: Quadrado
 bPeao = (Peca Branco Peao)
 bCavalo = (Peca Branco Cavalo)
