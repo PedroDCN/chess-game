@@ -196,6 +196,37 @@ verificaXeque estado cor primeiraIteracao quadradoRei =
     let (primeiraLista, segundaLista) = pegaPosicoesXeque estado (inverteCor cor) primeiraIteracao quadradoRei in
     let listaXeque = filter(\valor -> valor >= 0) (primeiraLista ++ segundaLista) in (length(listaXeque) > 0)
 
+-- Compita uma lista de tuplas com todas as posições de xeque
+pegaPosicoesXeque :: EstadoJogo -> CorPeca -> Bool -> Int -> ([Int],[Int]) 
+pegaPosicoesXeque estado corOposta primeiraIteracao quadradoRei = (
+        
+        -- todas as posições de verificação que não sejam cavalos
+         map (\x -> x estado corOposta primeiraIteracao quadradoRei)
+            [ (verificaXequeColunaEsquerda),
+              (verificaXequeColunaDireita),
+              (verificaXequeLinhaAbaixo),
+              (verificaXequeLinhaAcima),
+              (verificaDiagonalSuperiorEsquerda),
+              (verificaDiagonalInferiorEsquerda),
+              (verificaDiagonalSuperiorDireita),
+              (verificaDiagonalInferiorEsquerda)
+            ]
+        ++ map (\x -> x estado corOposta quadradoRei)
+            [(verificaPeaoXeque7), (verificaPeaoXeque9)],
+        
+        -- todas as oito posições de verificação de cavalo
+        map (\x -> x estado corOposta  quadradoRei)
+            [ (verificaXequeCavaloSuperiorCentralEsquerdo),
+              (verificaXequeCavaloInferiorCentralEsquerdo),
+              (verificaXequeCavaloSuperiorEsquerdo),
+              (verificaXequeCavaloInferiorEsquerdo),
+              (verificaXequeCavaloSuperiorDireito),
+              (verificaXequeCavaloInferiorDireito),
+              (verificaXequeCavaloSuperiorCentralDireito),
+              (verificaXequeCavaloInferiorCentralDireito)
+            ]
+     )
+
 -- Achar o quadrado pela linha e coluna
 pegaQuadradoIndice :: (Int,Int) -> Int
 pegaQuadradoIndice (x,y) = x * 8 + y
@@ -205,7 +236,7 @@ podeMoverRei :: EstadoJogo -> CorPeca -> Int -> Bool
 podeMoverRei estado cor quadrado =
     let l = quadrado `div` 8 in -- l (linha)
     let c = quadrado `mod` 8 in -- c (coluna)
-    let lista = filter (\valor -> (getCorQuadrado estado valor) /= cor) $ map pegaQuadradoIndice [(ll,cc) | ll <- [l-1, l+1], cc <- [c-1, c+1], ll >= 0, cc >= 0, ll <= 7, cc <= 7, (ll,cc) /= (l,c)] in
+    let lista = filter (\valor -> getCorQuadradoAt estado valor /= cor) $ map pegaQuadradoIndice [(ll,cc) | ll <- [l-1, l+1], cc <- [c-1, c+1], ll >= 0, cc >= 0, ll <= 7, cc <= 7, (ll,cc) /= (l,c)] in
     not (foldr (&&) True (map (verificaXeque estado cor True) lista))
 
 -- Tenta bloquear ou atacar a peça que está atacando o rei
@@ -301,7 +332,7 @@ verificaPeaoXeque7 estado cor celula
         = celula+7
     | otherwise = -1
     where
-        minhaCor = if (getTurno estado)==JogadorBranco then Branco else Preto
+        minhaCor = if (getTurno estado) == Humano then Branco else Preto
         verificaAtaqueCimaAbaixo = (minhaCor/=cor)
 
 verificaPeaoXeque9 :: EstadoJogo -> CorPeca -> Int -> Int
@@ -314,7 +345,7 @@ verificaPeaoXeque9 estado cor celula
         = celula+9
     | otherwise = -1
     where
-        minhaCor = if (getTurno estado)==JogadorBranco then Branco else Preto
+        minhaCor = if (getTurno estado)== Humano then Branco else Preto
         verificaAtaqueCimaAbaixo = (minhaCor/=cor)
 
 verificaXequeColunaEsquerda :: EstadoJogo -> CorPeca -> Bool -> Int -> Int
@@ -470,7 +501,7 @@ verificaXequeCavaloSuperiorCentralEsquerdo estado cor celula
     | otherwise = -1
 
 verificaXequeCavaloInferiorCentralEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
-checkLMidLeftHorseCheck estado cor celula
+verificaXequeCavaloInferiorCentralEsquerdo estado cor celula
     | celula<0 || celula>63 = -1
     | (((celula `mod` 8) - 2) >=0 && (celula+8) `div` 8 <=7) =
            if getCorQuadrado (getQuadradoAt estado (celula+6)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+6))) == Cavalo then (celula+6)
@@ -494,7 +525,7 @@ verificaXequeCavaloSuperiorDireito estado cor celula
     | otherwise = -1
 
 verificaXequeCavaloSuperiorCentralDireito ::  EstadoJogo -> CorPeca -> Int -> Int
-checkUMidRightHorseCheck estado cor celula
+verificaXequeCavaloSuperiorCentralDireito estado cor celula
     | celula<0 || celula>63 = -1
     | ((celula-8) `div` 8 >=0 && ((celula `mod` 8)+2) <= 7) =
            if getCorQuadrado (getQuadradoAt estado (celula-6)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula-6))) == Cavalo then (celula-6)
