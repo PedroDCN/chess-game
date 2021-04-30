@@ -23,10 +23,9 @@ config window = do
 
     -- definição textos invisíveis para guardar jogada
     j1 <- UI.string "" #. "j1" # set UI.id_ "j1"
-    j2 <- UI.string "" #. "j2" # set UI.id_ "j2"
     divinvisivel <- UI.div #. "mov" -- div invisível que guarda as casas da jogada atual
         # set style [("display", "none")]
-        #+ [element j1, element j2]
+        #+ [element j1]
 
     -- adiciona div do tabuleiro e dos botões em div principal
     principal <- UI.div #. "principal"
@@ -40,8 +39,8 @@ config window = do
     adicionaPecas
 
     -- define funções de efeito de hover in e out de todas as casas do tabuleiro
-
     fazHoverPecas
+
     -- define funções para movimento de peças ao clicar para qualquer casa do tabuleiro
     fazMovimentoCasas
 
@@ -50,26 +49,22 @@ addJogada :: String -> UI ()
 addJogada f = do
     w <- askWindow
     j1 <- getElementsByClassName w "j1"
-    j2 <- getElementsByClassName w "j2"
     let pos1 = head j1
-    let pos2 = head j2
-    text1 <- callFunction $ pegaTexto "j1"
-    text2 <- callFunction $ pegaTexto "j2"
-    if text1 == f then return () else do
-        if null text1 then do
+    casaI <- callFunction $ pegaTexto "j1"
+    if casaI == f then do
+        element pos1 # set UI.text ""
+        callFunction $ removeSombraCasa casaI
+        return ()
+    else do
+        if null casaI then do
             element pos1 # set UI.text f
             element pos1 # set style cssHighlight
             return ()
         else do
-            if null text2 then do
-                element pos2 # set UI.text f
-                movePeca text1 f
-                element pos1 # set UI.text ""
-                element pos2 # set UI.text ""
-                callFunction $ removeSombraCasa text1
-                return ()
-            else do
-                return ()
+            movePeca casaI f
+            element pos1 # set UI.text ""
+            callFunction $ removeSombraCasa casaI
+            return ()
 
 -- Função que adiciona as casas do tabuleiro, seguindo o padrão quadriculado do jogo
 adicionaCasas :: UI Element -> Cor -> UI ()
