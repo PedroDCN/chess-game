@@ -143,8 +143,6 @@ addPeca casa peca = do
 
 -- função que move uma peça da casaInicial (ex: a2) até a casaFinal especificada.
 -- Caso a casa inicial seja vazia, não realiza nenhum movimento.
--- TODO: usar a função addPeca para posicionar peça na casa final
--- TODO: Reaproveitar img da casaInicial (usar ffi), sem precisar criar img nova
 -- TODO: adicionar peça removida (caso exista) na lista de peças capturadas
 movePeca casai casaf = do
     if casai == "" then return () else do
@@ -154,14 +152,10 @@ movePeca casai casaf = do
             valorCasaini <- callFunction $ pegaTipoPecaCasa casai
             window <- askWindow
             ci <- UI.getElementsByClassName window casai
-            cf <- UI.getElementsByClassName window casaf
             let casaIni = head ci
-            let casaFin = head cf
             let tipoPeca = drop 5 valorCasaini
-            cp <- loadPeca' tipoPeca -- cria div com imagem da peça da casa inicial
             element casaIni # set children [] -- limpa casa de início
-            element casaFin # set children [] -- limpa casa final para colocar peça
-            element casaFin #+ [element cp]
+            addPeca casaf tipoPeca -- usa função addPeca para adicionar peça na casaFinal do movimento
             return ()
         else do return ()
 
