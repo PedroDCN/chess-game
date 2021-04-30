@@ -8,13 +8,13 @@ module Tipos where
 
 type Tabuleiro = [[Quadrado]]
 
-data Quadrado = Peca CorPeca TipoPeca | Vazio deriving (Show, Eq)
+data Quadrado = Peca CorPeca TipoPeca | Vazio deriving (Show, Eq, Read)
 
-data CorPeca = Branco | Preto | SemCor deriving (Show, Eq)
+data CorPeca = Branco | Preto | SemCor deriving (Show, Eq, Read)
 
-data TipoPeca = Bispo | Rei | Cavalo | Peao | Dama | Torre | SemTipo deriving (Show, Eq)
+data TipoPeca = Bispo | Rei | Cavalo | Peao | Dama | Torre | SemTipo deriving (Show, Eq, Read)
 
-data Jogador = Humano | Computador deriving (Show, Eq)
+data Jogador = Humano | Computador deriving (Show, Eq, Read)
 
 data EstadoJogo = EstadoJogo {
     tabuleiro           :: Tabuleiro, -- Lista 2D de Quadrados
@@ -24,7 +24,7 @@ data EstadoJogo = EstadoJogo {
     movimentoHabilitado :: Bool,      -- Verdade se o Jogador pode se mover
     pontoInicialSetado  :: Bool,      -- Verdade se houver um clique esquerdo na peça
     pontoInicial        :: Int        -- Índice do quadrado selecionado
-} deriving (Show)
+} deriving (Show, Read)
 
 -- Notação para as peças
 -- b = branco

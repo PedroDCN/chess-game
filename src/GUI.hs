@@ -4,6 +4,10 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Data.List
 import Estilo
+import Data.Maybe
+import Utilitarios
+import Tipos
+import Tabuleiro
 
 config :: Window -> UI ()
 config window = do
@@ -23,9 +27,32 @@ config window = do
 
     -- definição textos invisíveis para guardar jogada
     j1 <- UI.string "" #. "j1" # set UI.id_ "j1"
-    divinvisivel <- UI.div #. "mov" -- div invisível que guarda as casas da jogada atual
+    -- definição de variáveis de estado do jogo
+    let estadoJogoInicialPlayer = habilitarMovimento estadoJogoInicialBranco
+    let copiaEstadoJogoInicialPlayer = habilitarMovimento estadoJogoInicialBranco
+    let estadoJogoInicialBot = desabilitarMovimento estadoJogoInicialPreto
+    let vez = Branco
+
+    -- definição div invisível que guarda o esado de jogo atual em forma de string
+    textoEstadoPlayer <- UI.string (show estadoJogoInicialPlayer) #. "player"
+    textoEstadoPLayer2 <- UI.string (show copiaEstadoJogoInicialPlayer) #. "bu"
+    texttoEstadoBot <- UI.string (show estadoJogoInicialBot) #. "bot"
+    estadop <- UI.div #. "estadoPlayer" 
+        #+ [element textoEstadoPlayer]
+    estadobu <- UI.div #. "estadoBackup"
+        #+ [element textoEstadoPLayer2]
+    estadob <- UI.div #. "estadoBot"
+        #+ [element texttoEstadoBot]
+    textoVez <- UI.string (show vez) #. "vez"
+    vezc <- UI.div #. "vezJ"
+        #+ [element textoVez]
+
+    estado <- UI.div #. "estado" -- div que guarda as duas divs de estado
+        #+ [element estadop, element estadobu, element vezc, element estadob]
+
+    divinvisivel <- UI.div #. "mov" -- div invisível que guarda as casas da jogada atual e o estado do jogo
         # set style [("display", "none")]
-        #+ [element j1]
+        #+ [element j1, element estado]
 
     -- adiciona div do tabuleiro e dos botões em div principal
     principal <- UI.div #. "principal"
@@ -233,3 +260,82 @@ pegaTexto = ffi "document.getElementsByClassName(%1).item(0).innerHTML"
 -- função utilitária para debug
 -- consoleLog' :: String -> UI()
 -- consoleLog' = runFunction . ffi "console.log(%1)"
+
+getEstadoPlayer' :: JSFunction String
+getEstadoPlayer' = ffi "document.getElementsByClassName(%1).item(0).firstElementChild.firstElementChild.innerHTML" "estado"
+
+-- função que retorna o elemento do tipo EstadoJogo do player para ser alterado
+getEstadoPlayer :: UI EstadoJogo
+getEstadoPlayer = do
+    t <- callFunction getEstadoPlayer'
+    let f = read t::EstadoJogo
+    return f
+
+setEstadoPlayer :: EstadoJogo -> UI ()
+setEstadoPlayer ej = do
+    w <- askWindow 
+    p <- UI.getElementsByClassName w "estadoPlayer"
+    textoEstadoPlayer <- UI.string (show ej) #. "player"
+    let divPlayer = head p
+    element divPlayer # set children [] -- limpa internamente a div = tira o do estado guardado
+    element divPlayer #+ [element textoEstadoPlayer] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
+    return ()
+
+getEstadoPlayerBu' :: JSFunction String
+getEstadoPlayerBu' = ffi "document.getElementsByClassName(%1).item(0).getElementsByClassName(%2).item(0).firstElementChild.innerHTML" "estado" "estadoBackup"
+
+-- função que retorna o elemento do tipo EstadoJogoBackUp do player para ser alterado
+getEstadoPlayerBu :: UI EstadoJogo
+getEstadoPlayerBu = do
+    t <- callFunction getEstadoPlayerBu'
+    let f = read t::EstadoJogo
+    return f
+
+setEstadoPlayerBu :: EstadoJogo -> UI ()
+setEstadoPlayerBu ej = do
+    w <- askWindow 
+    p <- UI.getElementsByClassName w "estadoBackup"
+    textoEstadoPlayerBu <- UI.string (show ej) #. "Bu"
+    let divPlayerBu = head p
+    element divPlayerBu # set children [] -- limpa internamente a div = tira o do estado guardado
+    element divPlayerBu #+ [element textoEstadoPlayerBu] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
+    return ()
+
+getEstadoBot' :: JSFunction String
+getEstadoBot' = ffi "document.getElementsByClassName(%1).item(0).lastElementChild.firstElementChild.innerHTML" "estado"
+
+-- função que retorna o elemento do tipo EstadoJogo do bot para ser alterado
+getEstadoBot :: UI EstadoJogo
+getEstadoBot = do
+    t <- callFunction getEstadoBot'
+    let f = read t::EstadoJogo
+    return f
+
+setEstadoBot :: EstadoJogo -> UI ()
+setEstadoBot ej = do
+    w <- askWindow
+    p <- UI.getElementsByClassName w "estadoBot"
+    textoEstadoBot <- UI.string (show ej) #. "bot"
+    let divBot = head p
+    element divBot # set children [] -- limpa internamente a div = tira o do estado guardado
+    element divBot #+ [element textoEstadoBot] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
+    return ()
+
+getVez' :: JSFunction String
+getVez' = ffi "document.getElementsByClassName(%1).item(0).getElementsByClassName(%2).item(0).firstElementChild.innerHTML" "estado" "vezJ"
+
+getVez :: UI TipoPeca
+getVez = do
+    t <- callFunction getVez'
+    let f = read t::TipoPeca
+    return f
+
+setVez :: TipoPeca -> UI ()
+setVez vez = do
+    w <- askWindow
+    p <- UI.getElementsByClassName w "vezJ"
+    textoVez <- UI.string (show vez) #. "vez"
+    let divVez = head p
+    element divVez # set children []
+    element divVez #+ [element textoVez]
+    return ()

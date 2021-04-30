@@ -4,6 +4,10 @@ import Tipos
 
 -- Métodos para auxilixar o desenvolvimento da GUI
 
+-- reset o EstadoJogo para um dado estado
+resetaEstado :: EstadoJogo -> EstadoJogo -> EstadoJogo
+resetaEstado anterior _ = anterior
+
 inverteCor :: CorPeca -> CorPeca
 inverteCor cor
     | cor == Branco = Preto

@@ -29,6 +29,17 @@ import Data.List
 --}
 
 -- LÓGICA JOGAR 
+
+-- Move a peça no tabuleiro
+moveDePara :: EstadoJogo -> Int -> Int -> EstadoJogo 
+moveDePara state from to = (\startSquare intermediateState -> 
+        if (startSquare==bRei)
+            then setReiBrancoPos (setQuadradoAt intermediateState to startSquare) to -- rei branco foi mexido
+            else if (startSquare==pRei)
+                then setReiPretoPos (setQuadradoAt intermediateState to startSquare) to -- rei preto foi mexido
+                else setQuadradoAt intermediateState to startSquare
+    ) (getQuadradoAt state from) (setQuadradoAt state from (Vazio))
+
 listaMovimentosRei :: EstadoJogo -> Int -> [Int] -> [Int]
 listaMovimentosRei estado _ [] = []
 listaMovimentosRei estado inicio (x:xs) =
