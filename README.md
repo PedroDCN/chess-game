@@ -10,7 +10,7 @@
 
 ## Como rodar:
 
-Precisa ter o stack instalado, e então rodar os seguintes comandos dentro da raiz do projeto:
+Precisa possuir o [stack](https://docs.haskellstack.org/en/stable/README/#how-to-install) instalado, e então rodar os seguintes comandos dentro da raiz do projeto:
 ```stack
 stack install
 stack build
