@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b50b26ad9587bc73d5c18f6ee4f1bbbe3e6faf56c90d755f53a340ef3f9c6e3a
+-- hash: f4c88065f0566124a6312f02b8bf0e8727791196eef4288d83c7359038b8e27e
 
 name:           chess-game-haskell
 version:        0.1.0.0
@@ -29,15 +29,12 @@ source-repository head
 library
   exposed-modules:
       Estilo
-      Game
       GUI
       LogicaJogar
       LogicaValidar
-      Movimento
-      Posicao
-      Tabuleiro
+      LogicaXeque
       Tipos
-      Utilitarios
+      Xadrez
   other-modules:
       Paths_chess_game_haskell
   hs-source-dirs:

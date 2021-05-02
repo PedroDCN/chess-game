@@ -1,560 +1,243 @@
 module LogicaValidar where
 
 import Tipos
-import Tabuleiro
-import Utilitarios
-import Data.List
+import Xadrez
 
-{--
--- Funções para verificação das jogadas (movimentos) feitas no jogo
--- se seguem as regras do xadrez.
---
--- função que verifica se um movimento é legal e retorna um boolean
--- (recebe o estado do tabuleiro atual e o movimento)
--- movimento legal:
--- - não pode colocar uma peça em cima de outra de mesma cor.
--- - peça só se movimenta seguindo as regras de movimento da mesma.
--- - não pode pular por cima de uma peça pra ir para a casa da frente\atrás dela (exceção do cavalo).
--- - quando em cheque, deve fazer uma jogada para sair do cheque, 
---   seja capturando a peça que da cheque, colocando uma peça na frente, ou movendo o rei
---   (caso especial de cheque duplo = deve morrer o rei => 
---   verificar depois da possível jogada se ainda vai estar em cheque para saber se é duplo),
---   se não for possível sair do cheque, é cheque mate.
--- - roque só é possível se as casas entre rei e torre não estão ameaçadas,
---   e o rei e a torre estão na posição inicial (manter variáveis globais pra
---   pra saber se o rei ou a torre se moveram).
--- - en passant só é possível se o peão inimigo acabar de ter sido movido
---   (verificar se a jogada anterior é a do peão)
--- - você não pode fazer uma jogada que deixe seu rei em cheque
---}
+verificaMovimento :: Jogada -> Jogo -> Bool -- peão esta movendo em diagonal mesmo sem peça -- bispo esta pulando peças aliadas mas n para em cima delas -- rei totalmente quebrado
+verificaMovimento jog@(Jogada posi posf) jo
+  | tipopeca == Bispo = verificaMovimentoBispo jog jo
+  | tipopeca == Torre = verificaMovimentoTorre jog jo
+  | tipopeca == Dama = verificaMovimentoDama jog jo
+  | tipopeca == Cavalo = verificaMovimentoCavalo jog jo
+  | tipopeca == Peao = verificaMovimentoPeao jog jo
+  | tipopeca == Rei = verificaMovimentoRei jog jo
+  | otherwise = False
+  where
+      tipopeca = tipo $ getPecaPosicao posi jo
 
--- LÓGICA JOGAR 
+-- Função que verifica se uma jogada feito com o bispo para o momento do jogo atual é válida
+verificaMovimentoBispo :: Jogada -> Jogo -> Bool
+verificaMovimentoBispo (Jogada posi posf) jo = lista /= [] && (posf `elem` lista)
+    where lista = listaTodasJogadasBispo posi jo
 
--- Move a peça no tabuleiro
-moveDePara :: EstadoJogo -> Int -> Int -> EstadoJogo 
-moveDePara state from to = (\startSquare intermediateState -> 
-        if (startSquare==bRei)
-            then setReiBrancoPos (setQuadradoAt intermediateState to startSquare) to -- rei branco foi mexido
-            else if (startSquare==pRei)
-                then setReiPretoPos (setQuadradoAt intermediateState to startSquare) to -- rei preto foi mexido
-                else setQuadradoAt intermediateState to startSquare
-    ) (getQuadradoAt state from) (setQuadradoAt state from (Vazio))
-
-listaMovimentosRei :: EstadoJogo -> Int -> [Int] -> [Int]
-listaMovimentosRei estado _ [] = []
-listaMovimentosRei estado inicio (x:xs) =
-    if (verificaMovimentoRei estado inicio x) then [x] ++ (listaMovimentosRei estado inicio xs)
-    else (listaMovimentosRei estado inicio xs)
-
-listaMovimentosDama :: EstadoJogo -> Int -> [Int] -> [Int]
-listaMovimentosDama estado _ [] = []
-listaMovimentosDama estado inicio (x:xs) =
-    if (verificaMovimentoDama estado inicio x) then [x] ++ (listaMovimentosDama estado inicio xs)
-    else (listaMovimentosDama estado inicio xs)
-
-listaMovimentosTorre :: EstadoJogo -> Int -> [Int] -> [Int]
-listaMovimentosTorre estado _ [] = []
-listaMovimentosTorre estado inicio (x:xs) =
-    if (verificaMovimentoTorre estado inicio x) then [x] ++ (listaMovimentosTorre estado inicio xs)
-    else (listaMovimentosTorre estado inicio xs)
-
-listaMovimentosCavalo :: EstadoJogo -> Int -> [Int] -> [Int]
-listaMovimentosCavalo estado _ [] = []
-listaMovimentosCavalo estado inicio (x:xs) =
-    if (verificaMovimentoCavalo estado inicio x) then [x] ++ (listaMovimentosCavalo estado inicio xs)
-    else (listaMovimentosCavalo estado inicio xs)
-
-listaMovimentosBispo :: EstadoJogo -> Int -> [Int] -> [Int]
-listaMovimentosBispo estado _ [] = []
-listaMovimentosBispo estado inicio (x:xs) =
-    if (verificaMovimentoBispo estado inicio x) then [x] ++ (listaMovimentosBispo estado inicio xs)
-    else (listaMovimentosBispo estado inicio xs)
-    
-
-listaMovimentosPeao :: EstadoJogo -> Int -> [Int] -> CorPeca -> [Int]
-listaMovimentosPeao estado _ [] _ = []
-listaMovimentosPeao estado inicio (x:xs) cor =
-    if (verificaMovimentoPeao estado inicio x cor) then [x] ++ (listaMovimentosPeao estado inicio xs cor)
-    else (listaMovimentosPeao estado inicio xs cor)
-
--- FIM LÓGICA JOGAR
-
-
-verificaMovimentoRei :: EstadoJogo -> Int -> Int -> Bool
-verificaMovimentoRei estado inicio fim =
-    (\ linhaInicio colunaInicio linhaFim colunaFim ->
-        ((linhaInicio == linhaFim) && (abs (colunaInicio - colunaFim)) == 1)            
-        || ((colunaInicio == colunaFim) && (abs (linhaInicio - linhaFim)) == 1)         
-        || ((abs (linhaInicio - linhaFim)) == 1 && (abs (colunaInicio - colunaFim)) == 1)
-    ) (inicio`div`8) (inicio`mod`8) (fim`div`8) (fim`mod`8)
-
-verificaMovimentoTorre :: EstadoJogo -> Int -> Int -> Bool
-verificaMovimentoTorre estado inicio fim
-    | (inicio == fim) = False
-    | (colunaInicio == colunaFim) = ((inicio > fim)
-        && ((foldr (&&) True (map (estaVazio estado) [(inicio - 8),(inicio - 16)..(fim + 8)]))))
-        || ((not (inicio > fim))
-        && (foldr (&&) True (map (estaVazio estado) [(inicio + 8),(inicio + 16)..(fim - 8)])))
-    | (linhaInicio == linhaFim) = ((inicio > fim)
-        && (foldr (&&) True (map (estaVazio estado) [(inicio - 1),(inicio - 2)..(fim + 1)])))
-        || ((not (inicio > fim))
-        && (foldr (&&) True (map (estaVazio estado) [(inicio + 1),(inicio + 2)..(fim - 1)])))
-    | otherwise = False
+-- Função que lista, para uma posição dada em um jogo, todas as possíveis jogadas do bispo estando naquela casa
+listaTodasJogadasBispo :: Posicao -> Jogo -> [Posicao]
+listaTodasJogadasBispo posi@(x1,y1) jo = possiveisID ++ possiveisIE ++ possiveisSD ++ possiveisSE
     where
-        linhaInicio  = inicio `div` 8
-        linhaFim     = fim    `div` 8
-        colunaInicio = inicio `mod` 8
-        colunaFim    = fim    `mod` 8
+        corBispo = getCorPosicao posi jo
 
-verificaMovimentoCavalo :: EstadoJogo -> Int -> Int -> Bool
-verificaMovimentoCavalo estado inicio fim =
-    (\linhasMovidas colunasMovidas ->
-        (linhasMovidas /= 0) && (colunasMovidas /= 0) && ((linhasMovidas + colunasMovidas) == 3)
-    ) (abs $ (inicio `div` 8) - (fim `div` 8)) (abs $ (inicio `mod` 8) - (fim `mod` 8))
+        xscima = if x1+1 /= 8 then [(x1+1)..7] else []              -- todas as linhas para cima da casa
+        xsbaixo = if x1-1 /= -1 then reverse [0..(x1-1)] else []    -- todas as linhas para baixo da casa
+        ysesquerda = if y1-1 /= -1 then reverse [0..(y1-1)] else [] -- todas as colunas a esquerda da casa
+        ysdireita = if y1+1 /= 8 then [(y1+1)..7] else []           -- todas as colunas a direita da casa
 
-verificaMovimentoBispo :: EstadoJogo -> Int -> Int -> Bool
-verificaMovimentoBispo estado inicio fim
-    | (inicio == fim) || ((abs (linhaInicio - linhaFim)) /= (abs (colunaInicio - colunaFim))) = False
-    | ((linhaInicio - linhaFim) == (colunaFim - colunaInicio)) =
-        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 7), (inicio - 14)..(fim + 7)])))
-    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 7), (fim - 14)..(inicio + 7)])))
-    | otherwise =
-        ((inicio > fim) && (foldr (&&) True (map (estaVazio estado) [(inicio - 9), (inicio - 18)..(fim + 9)])))
-    ||  ((inicio < fim) && (foldr (&&) True (map (estaVazio estado) [(fim - 9), (fim - 18)..(inicio + 9)])))
+        -- todos listas de todas as posições
+        casasSE = zip xscima ysesquerda                             -- todas as casas na diagonal Superior Esquerda da casa
+        casasSD = zip xscima ysdireita                              -- todas as casas na diagonal Superior Direita da casa
+        casasIE = zip xsbaixo ysesquerda                            -- todas as casas na diagonal Inferior Esquerda da casa
+        casasID = zip xsbaixo ysdireita                             -- todas as casas na diagonal Inferior Direita da casa
+
+        -- todos listas de posições possíveis
+        possiveisSE = if null casasSE then [] else                                                                                                 -- todas as casas válidas na diagonal superior Esquerda
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasSE in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corBispo]
+
+        possiveisSD = if null casasSD then [] else                                                                                                 -- todas as casas válidas na diagonal superior direita
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasSD in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corBispo]
+
+        possiveisIE = if null casasIE then [] else                                                                                                 -- todas as casas válidas na diagonal inferior esquerda
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasIE in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corBispo]
+        possiveisID = if null casasID then [] else                                                                                                 -- todas as casas válidas na diagonal inferior direita
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasID in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corBispo]
+
+        --possiveisID = if null casasID then [] else foldl (\acc x ->
+        --   (getPecaPosicao x jo)) [] casasID
+
+-- Função que verifica se uma jogada feito com a torre para o momento do jogo atual é válida
+verificaMovimentoTorre :: Jogada -> Jogo -> Bool
+verificaMovimentoTorre (Jogada posi posf) jo = lista /= [] && (posf `elem` lista)
+    where lista = listaTodasJogadasTorre posi jo
+
+listaTodasJogadasTorre :: Posicao -> Jogo -> [Posicao]
+listaTodasJogadasTorre posi@(x1,y1) jo = possiveisCB ++ possiveisCC ++ possiveisCD ++ possiveisCE
     where
-        linhaInicio  = inicio `div` 8
-        linhaFim     = fim    `div` 8
-        colunaInicio = inicio `mod` 8
-        colunaFim    = fim    `mod` 8
+        corTorre = getCorPosicao posi jo
 
-verificaMovimentoDama :: EstadoJogo -> Int -> Int -> Bool
-verificaMovimentoDama estado inicio fim =
-    (inicio /= fim) && 
-    ((verificaMovimentoTorre estado inicio fim) || (verificaMovimentoBispo estado inicio fim))
+        xscima = if x1+1 /= 8 then [(x1+1)..7] else []              -- todas as linhas para cima da casa
+        xsbaixo = if x1-1 /= -1 then reverse [0..(x1-1)] else []    -- todas as linhas para baixo da casa
+        ysesquerda = if y1-1 /= -1 then reverse [0..(y1-1)] else [] -- todas as colunas a esquerda da casa
+        ysdireita = if y1+1 /= 8 then [(y1+1)..7] else []           -- todas as colunas a direita da casa
 
-verificaMovimentoPeao :: EstadoJogo -> Int -> Int -> CorPeca -> Bool
-verificaMovimentoPeao estado inicio fim cor
-    | (peca == Vazio) || (linhaInicio == linhaFim) = False
-    | (colunaInicio == colunaFim) = (getQuadradoAt estado fim) == Vazio
-        && ((linhaInicio - linhaFim == 1)
-            || (
-                linhaInicio == 6
-                && (linhaInicio - linhaFim) == 2
-                && (getQuadradoAt estado (40 + colunaInicio)) == Vazio
-            )
-        )
-    | otherwise = (
-        (abs (colunaInicio - colunaFim)) == 1
-        && (linhaInicio - linhaFim) == 1
-        && (getCorQuadrado (getQuadradoAt estado fim)) == corOposta
-    )
+        casasCima = map (\x -> (x, y1)) xscima                      -- todas as casas na mesma coluna para cima da casa
+        casasBaixo = map (\x -> (x, y1)) xsbaixo                    -- todas as casas na mesma coluna para baixo da casa
+        casasEsquerda = map (\y -> (x1, y)) ysesquerda              -- todas as casas na mesma linha para esquerda da casa
+        casasDireita = map (\y -> (x1, y)) ysdireita                -- todas as casas na mesma linha para direita da casa
+
+        possiveisCC = if null casasCima then [] else                                                                                                 -- todas as casas válidas na mesma coluna para cima da casa
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasCima in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corTorre]
+
+        possiveisCB = if null casasBaixo then [] else                                                                                                 -- todas as casas válidas na mesma coluna para baixo da casa
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasBaixo in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corTorre]
+
+        possiveisCE = if null casasEsquerda then [] else                                                                                                 -- todas as casas válidas na mesma linha para esquerda da casa
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasEsquerda in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corTorre]
+
+        possiveisCD = if null casasDireita then [] else                                                                                                 -- todas as casas válidas na mesma linha para direita da casa
+            let tuplares = span (\p -> pecaVazia == getPecaPosicao p jo) casasDireita in
+                fst tuplares ++ [head (snd tuplares) | not (null (snd tuplares)) && getCorPosicao (head (snd tuplares)) jo == alternaCor corTorre]
+
+-- Função que verifica se uma jogada feito com a dama para o momento do jogo atual é válida
+verificaMovimentoDama :: Jogada -> Jogo -> Bool
+verificaMovimentoDama (Jogada posi posf) jo = lista /= [] && (posf `elem` lista)
+    where lista = listaTodasJogadasDama posi jo
+
+listaTodasJogadasDama :: Posicao -> Jogo -> [Posicao]
+listaTodasJogadasDama posi@(x1,y1) jo = listaTodasJogadasBispo posi jo ++ listaTodasJogadasTorre posi jo -- uma dama se move como a junção de um bispo com torre
+
+-- Função que verifica se uma jogada feito com o cavalo para o momento do jogo atual é válida
+verificaMovimentoCavalo :: Jogada -> Jogo -> Bool
+verificaMovimentoCavalo (Jogada posi posf) jo = lista /= [] && (posf `elem` lista)
+    where lista = listaTodasJogadasCavalo posi jo
+
+listaTodasJogadasCavalo :: Posicao -> Jogo -> [Posicao]
+listaTodasJogadasCavalo posi@(x1,y1) jo = possiveldid1 ++ possiveldid2 ++ possiveldie1 ++ possiveldie2 ++ possiveldsd1 ++ possiveldsd2 ++ possiveldse1 ++ possiveldse2
     where
-        linhaInicio  = inicio `div` 8
-        linhaFim     = fim    `div` 8
-        colunaInicio = inicio `mod` 8
-        colunaFim    = fim    `mod` 8
-        corOposta    = if cor == Branco then Preto else Branco
-        peca         = getQuadradoAt estado inicio
+        corCavalo = getCorPosicao posi jo
 
-verificaMovimento :: EstadoJogo -> Int -> Int -> Bool
-verificaMovimento estado inicio fim
-    | not movimentoValido = False
-    | otherwise = case tipoPeca of
-        Peao      -> (verificaMovimentoPeao estado inicio fim corPeca)
-        Cavalo    -> (verificaMovimentoCavalo estado inicio fim)
-        Bispo     -> (verificaMovimentoBispo estado inicio fim)
-        Rei       -> (verificaMovimentoRei estado inicio fim)
-        Dama      -> (verificaMovimentoDama estado inicio fim)
-        Torre     -> (verificaMovimentoTorre estado inicio fim)
-        otherwise -> False
-    where
-        quadrado        = getQuadradoAt estado inicio
-        tipoPeca        = getTipoQuadrado quadrado
-        corPeca         = getCorQuadrado quadrado
-        turno           = getTurno estado
-        movimentoValido = (inicio >= 0 && inicio <= 63 && fim >= 0 && fim <= 63)
-            && (
-                ((turno == Humano) && (corPeca == Branco))
-                || ((turno == Computador) && (corPeca == Preto))
-               )
-            && (corPeca /= (getCorQuadrado (getQuadradoAt estado fim)))
+        dse1 = [(x1+2, y1-1) | y1 /= 0 && x1 /= 6 && x1 /= 7] -- todas as duas jogadas de cavalo possíveis para a diagonal superior esquerda
+        dse2 = [(x1+1, y1-2) | y1 /= 0 && y1 /= 1 && x1 /= 7]
 
-estaVazio :: EstadoJogo -> Int -> Bool
-estaVazio estado indice = ((getQuadradoAt estado indice) == Vazio)
+        dsd1 = [(x1+2, y1+1) | y1 /= 7 && x1 /= 6 && x1 /= 7] -- todas as duas jogadas de cavalo possíveis para a diagonal superior direita
+        dsd2 = [(x1+1, y1+2) | y1 /= 6 && y1 /= 7 && x1 /= 7]
 
--- Verifica se é um xeque-mate (xeque, mate)
-verificaXequeMate :: EstadoJogo -> CorPeca -> (Bool, Bool)
-verificaXequeMate estado cor =
-    (\quadradoRei ->
-        (\(primeiraLista, segundaLista) ->
-            (\listaXeque ->
-                (
-                    length (listaXeque) > 0, -- Verificação para o Xeque
-                    (length(listaXeque) > 0) && (not (podeMoverRei estado cor quadradoRei)) -- Verificação para o Mate
-                    && (not $ podeAtacarPecaXeque estado cor quadradoRei (primeiraLista, segundaLista) listaXeque)
-                )
-            ) $ filter (\valor -> valor >= 0) (primeiraLista ++ segundaLista)
-        ) $ pegaPosicoesXeque estado (inverteCor cor) False quadradoRei
-    ) $ getReiPos estado cor
+        die1 = [(x1-2, y1-1) | y1 /= 0 && x1 /= 1 && x1 /= 0] -- todas as duas jogadas de cavalo possíveis para a diagonal inferior esquerda
+        die2 = [(x1-1, y1-2) | y1 /= 0 && y1 /= 1 && x1 /= 0]
 
--- Checa se é um Xeque
-estaEmXeque :: EstadoJogo -> CorPeca -> Bool
-estaEmXeque estado cor = verificaXeque estado cor False (getReiPos estado cor)
+        did1 = [(x1-2, y1+1) | y1 /= 7 && x1 /= 1 && x1 /= 0] -- todas as duas jogadas de cavalo possíveis para a diagonal inferior direita
+        did2 = [(x1-1, y1+2) | y1 /= 6 && y1 /= 7 && x1 /= 0]
 
--- Computa a lista de todas as posições de xeque
-verificaXeque :: EstadoJogo -> CorPeca -> Bool -> Int -> Bool
-verificaXeque estado cor primeiraIteracao quadradoRei =
-    let (primeiraLista, segundaLista) = pegaPosicoesXeque estado (inverteCor cor) primeiraIteracao quadradoRei in
-    let listaXeque = filter(\valor -> valor >= 0) (primeiraLista ++ segundaLista) in (length(listaXeque) > 0)
+        possiveldse1
+          | null dse1 = []
+          | (getPecaPosicao (head dse1) jo == pecaVazia) || (getCorPosicao (head dse1) jo == alternaCor corCavalo) = dse1
+          | otherwise = []
 
--- Compita uma lista de tuplas com todas as posições de xeque
-pegaPosicoesXeque :: EstadoJogo -> CorPeca -> Bool -> Int -> ([Int],[Int]) 
-pegaPosicoesXeque estado corOposta primeiraIteracao quadradoRei = (
-        
-        -- todas as posições de verificação que não sejam cavalos
-         map (\x -> x estado corOposta primeiraIteracao quadradoRei)
-            [ (verificaXequeColunaEsquerda),
-              (verificaXequeColunaDireita),
-              (verificaXequeLinhaAbaixo),
-              (verificaXequeLinhaAcima),
-              (verificaDiagonalSuperiorEsquerda),
-              (verificaDiagonalInferiorEsquerda),
-              (verificaDiagonalSuperiorDireita),
-              (verificaDiagonalInferiorEsquerda)
-            ]
-        ++ map (\x -> x estado corOposta quadradoRei)
-            [(verificaPeaoXeque7), (verificaPeaoXeque9)],
-        
-        -- todas as oito posições de verificação de cavalo
-        map (\x -> x estado corOposta  quadradoRei)
-            [ (verificaXequeCavaloSuperiorCentralEsquerdo),
-              (verificaXequeCavaloInferiorCentralEsquerdo),
-              (verificaXequeCavaloSuperiorEsquerdo),
-              (verificaXequeCavaloInferiorEsquerdo),
-              (verificaXequeCavaloSuperiorDireito),
-              (verificaXequeCavaloInferiorDireito),
-              (verificaXequeCavaloSuperiorCentralDireito),
-              (verificaXequeCavaloInferiorCentralDireito)
-            ]
-     )
+        possiveldse2
+          | null dse2 = []
+          | (getPecaPosicao (head dse2) jo == pecaVazia) || (getCorPosicao (head dse2) jo == alternaCor corCavalo) = dse2
+          | otherwise = []
 
--- Achar o quadrado pela linha e coluna
-pegaQuadradoIndice :: (Int,Int) -> Int
-pegaQuadradoIndice (x,y) = x * 8 + y
+        possiveldsd1
+          | null dsd1 = []
+          | (getPecaPosicao (head dsd1) jo == pecaVazia) || (getCorPosicao (head dsd1) jo == alternaCor corCavalo) = dsd1
+          | otherwise = []
 
--- Verifica se o rei pode se mover
-podeMoverRei :: EstadoJogo -> CorPeca -> Int -> Bool
-podeMoverRei estado cor quadrado =
-    let l = quadrado `div` 8 in -- l (linha)
-    let c = quadrado `mod` 8 in -- c (coluna)
-    let lista = filter (\valor -> getCorQuadradoAt estado valor /= cor) $ map pegaQuadradoIndice [(ll,cc) | ll <- [l-1, l+1], cc <- [c-1, c+1], ll >= 0, cc >= 0, ll <= 7, cc <= 7, (ll,cc) /= (l,c)] in
-    not (foldr (&&) True (map (verificaXeque estado cor True) lista))
+        possiveldsd2
+          | null dsd2 = []
+          | (getPecaPosicao (head dsd2) jo == pecaVazia) || (getCorPosicao (head dsd2) jo == alternaCor corCavalo) = dsd2
+          | otherwise = []
 
--- Tenta bloquear ou atacar a peça que está atacando o rei
-podeAtacarPecaXeque :: EstadoJogo -> CorPeca -> Int -> ([Int],[Int]) -> [Int] -> Bool
-podeAtacarPecaXeque estado cor quadrado (primeiraLista,segundaLista) listaXeque
-    | (length(listaXeque) >= 2) = False -- Se tem mais de um Xeque acabou
-    | (length(listaXeque) == 1) =       -- Se só possuir um xeque, então tenta atacar ou bloquear
-    if (length(filter(\valor -> valor >= 0) (segundaLista)) == 1) then podeAtacarCavalo estado (inverteCor cor) (listaXeque !! 0)
-    else podeBloquearPecaXeque estado (inverteCor cor) quadrado (primeiraLista,segundaLista) listaXeque
-podeAtacarPecaXeque _ _ _ _ _ = True
+        possiveldie1
+          | null die1 = []
+          | (getPecaPosicao (head die1) jo == pecaVazia) || (getCorPosicao (head die1) jo == alternaCor corCavalo) = die1
+          | otherwise = []
 
-podeAtacarCavalo :: EstadoJogo -> CorPeca -> Int -> Bool
-podeAtacarCavalo estado cor quadrado = verificaXeque estado cor True quadrado
+        possiveldie2
+          | null die2 = []
+          | (getPecaPosicao (head die2) jo == pecaVazia) || (getCorPosicao (head die2) jo == alternaCor corCavalo) = die2
+          | otherwise = []
 
-podeBloquearPecaXeque :: EstadoJogo -> CorPeca -> Int -> ([Int],[Int]) -> [Int] -> Bool
-podeBloquearPecaXeque estado cor quadrado (primeiraLista, segundaLista) listaXeque -- Acha o caminho para bloquear a peça que ataca o rei
-    | (indice == Just 0) = verificaAtaqueColunaEsquerda           estado cor linha (cabecaListaXeque `mod` 8) coluna
-    | (indice == Just 1) = verificaAtaqueColunaDireita            estado cor linha (cabecaListaXeque `mod` 8) coluna
-    | (indice == Just 2) = verificaAtaqueLinhaAbaixo              estado cor linha (cabecaListaXeque `div` 8) coluna
-    | (indice == Just 3) = verificaAtaqueLinhaAcima               estado cor linha (cabecaListaXeque `div` 8) coluna
-    | (indice == Just 4) = verificaAtaqueDiagonalSuperiorEsquerdo estado cor linha (cabecaListaXeque) coluna
-    | (indice == Just 5) = verificaAtaqueDiagonalInferiorEsquerdo estado cor linha (cabecaListaXeque) coluna
-    | (indice == Just 6) = verificaAtaqueDiagonalSuperiorDireito  estado cor linha (cabecaListaXeque) coluna
-    | (indice == Just 7) = verificaAtaqueDiagonalInferiorDireito  estado cor linha (cabecaListaXeque) coluna
-    | otherwise          = verificaAtaquePeao                     estado cor cabecaListaXeque
-    where
-        cabecaListaXeque = listaXeque !! 0
-        indice = elemIndex (cabecaListaXeque) primeiraLista
-        linha = quadrado `div` 8
-        coluna = quadrado `mod` 8
+        possiveldid1
+          | null did1 = []
+          | (getPecaPosicao (head did1) jo == pecaVazia) || (getCorPosicao (head did1) jo == alternaCor corCavalo) = did1
+          | otherwise = []
 
--- Funções para verificar de onde o ataque vem para a função acima
+        possiveldid2
+          | null did2 = []
+          | (getPecaPosicao (head did2) jo == pecaVazia) || (getCorPosicao (head did2) jo == alternaCor corCavalo) = did2
+          | otherwise = []
 
-verificaAtaquePeao :: EstadoJogo -> CorPeca -> Int -> Bool
-verificaAtaquePeao estado cor quadrado = verificaXeque estado cor False quadrado
+-- Função que verifica se uma jogada feito com o peão para o momento do jogo atual é válida
+verificaMovimentoPeao :: Jogada -> Jogo -> Bool
+verificaMovimentoPeao (Jogada posi posf) jo = lista /= [] && (posf `elem` lista)
+    where lista = listaTodasJogadasPeao posi jo
 
--- l = linha, c coluna
-verificaAtaqueColunaEsquerda :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueColunaEsquerda estado cor linhaInicio colunaFim colunaInicio =
-    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio], cc <- [colunaInicio-1,colunaInicio-2..colunaFim]] in
-        foldr (||) False (map (verificaXeque estado cor False) lista)
+listaTodasJogadasPeao :: Posicao -> Jogo -> [Posicao]
+listaTodasJogadasPeao posi@(x1,y1) jo
+  | corPeao == Branca =
+    if x1 == 1 then
+        pecasInicialB
+    else if x1 == 7 then [] else
+        pecasB
+  | x1 == 6 = pecasInicialP
+  | x1 == 0 = []
+  | otherwise = pecasP
+  where
+    corPeao = getCorPosicao posi jo
 
-verificaAtaqueColunaDireita :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueColunaDireita estado cor linhaInicio colunaFim colunaInicio =
-    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio], cc <- [colunaInicio+1,colunaInicio+2..colunaFim]] in
-        foldr (||) False (map (verificaXeque estado cor False) lista)
+    pecasInicialB = pecasB ++ [(x1 + 2, y1) | (getPecaPosicao (x1 + 1, y1) jo == pecaVazia) && (getPecaPosicao (x1 + 2, y1) jo == pecaVazia)]
 
-verificaAtaqueLinhaAbaixo :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueLinhaAbaixo estado cor linhaInicio linhaFim colunaInicio =
-    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio+1,linhaInicio+2..linhaFim], cc <- [colunaInicio]] in
-        foldr (||) False (map (verificaXeque estado cor False) lista)
+    pecasB = [(x1 + 1, y1) | getPecaPosicao (x1 + 1, y1) jo == pecaVazia] ++
+        [(x1 + 1, y1 + 1) | y1 /= 7 && (getCorPosicao (x1 + 1, y1 + 1) jo == alternaCor corPeao)] ++
+        [(x1 + 1, y1 - 1) | y1 /= 0 && (getCorPosicao (x1 + 1, y1 - 1) jo == alternaCor corPeao)]
 
-verificaAtaqueLinhaAcima :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueLinhaAcima estado cor linhaInicio linhaFim colunaInicio =
-    let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio-1,linhaInicio-2..linhaFim], cc <- [colunaInicio]] in
-        foldr (||) False (map (verificaXeque estado cor False) lista)
+    pecasInicialP = pecasP ++ [(x1 - 2, y1) | (getPecaPosicao (x1 - 1, y1) jo == pecaVazia) && (getPecaPosicao (x1 - 2, y1) jo == pecaVazia)]
 
-verificaAtaqueDiagonalSuperiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueDiagonalSuperiorEsquerdo estado cor linhaInicio fim colunaInicio =
-    (\linhaFim colunaFim ->
-        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio-1,linhaInicio-2..linhaFim], cc <- [colunaInicio-1,colunaInicio-2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
-            foldr (||) False (map (verificaXeque estado cor False) lista)
-    ) (fim `div` 8) (fim `mod` 8)
+    pecasP = ([(x1 - 1, y1) | getPecaPosicao (x1 - 1, y1) jo == pecaVazia]) ++
+        [(x1 - 1, y1 + 1) | y1 /= 7 && (getCorPosicao (x1 - 1, y1 + 1) jo == alternaCor corPeao)] ++
+        [(x1 - 1, y1 - 1) | y1 /= 0 && (getCorPosicao (x1 - 1, y1 - 1) jo == alternaCor corPeao)]
 
-verificaAtaqueDiagonalInferiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueDiagonalInferiorEsquerdo estado cor linhaInicio fim colunaInicio =
-    (\linhaFim colunaFim ->
-        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio+1,linhaInicio+2..linhaFim], cc <- [colunaInicio-1,colunaInicio-2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
-            foldr (||) False (map (verificaXeque estado cor False) lista)
-    ) (fim `div` 8) (fim `mod` 8)
+verificaMovimentoRei :: Jogada -> Jogo -> Bool
+verificaMovimentoRei (Jogada posi posf) jo = not (null lista) && (posf `elem` lista)
+    where lista = listaTodasJogadasRei posi jo
 
-verificaAtaqueDiagonalSuperiorDireito :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueDiagonalSuperiorDireito estado cor linhaInicio fim colunaInicio =
-    (\linhaFim colunaFim ->
-        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio-1,linhaInicio-2..linhaFim], cc <- [colunaInicio+1,colunaInicio+2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
-            foldr (||) False (map (verificaXeque estado cor False) lista)
-    ) (fim `div` 8) (fim `mod` 8)
-
-verificaAtaqueDiagonalInferiorDireito :: EstadoJogo -> CorPeca -> Int -> Int -> Int -> Bool
-verificaAtaqueDiagonalInferiorDireito estado cor linhaInicio fim colunaInicio =
-    (\linhaFim colunaFim ->
-        let lista = map pegaQuadradoIndice [(ll,cc) | ll <- [linhaInicio+1,linhaInicio+2..linhaFim], cc <- [colunaInicio+1,colunaInicio+2..colunaFim], abs(ll-linhaInicio) == abs(cc-colunaInicio)] in
-            foldr (||) False (map (verificaXeque estado cor False) lista)
-    ) (fim `div` 8) (fim `mod` 8)
-
-verificaPeaoXeque7 :: EstadoJogo -> CorPeca -> Int -> Int
-verificaPeaoXeque7 estado cor celula
-    | verificaAtaqueCimaAbaixo
-        && (((celula-7) >= 0) && (getQuadradoAt estado (celula-7)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
-        = celula-7
-    | (not verificaAtaqueCimaAbaixo)
-        && (((celula+7) <= 63) && (getQuadradoAt estado (celula+7)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
-        = celula+7
-    | otherwise = -1
-    where
-        minhaCor = if (getTurno estado) == Humano then Branco else Preto
-        verificaAtaqueCimaAbaixo = (minhaCor/=cor)
-
-verificaPeaoXeque9 :: EstadoJogo -> CorPeca -> Int -> Int
-verificaPeaoXeque9 estado cor celula
-    | verificaAtaqueCimaAbaixo
-        && (((celula-9) >= 0) && (getQuadradoAt estado (celula-9)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
-        = celula-9
-    | (not verificaAtaqueCimaAbaixo)
-        && (((celula+9) <= 63) && (getQuadradoAt estado (celula+9)) == (Peca cor Peao)) && (getQuadradoAt estado (celula))/=Vazio
-        = celula+9
-    | otherwise = -1
-    where
-        minhaCor = if (getTurno estado)== Humano then Branco else Preto
-        verificaAtaqueCimaAbaixo = (minhaCor/=cor)
-
-verificaXequeColunaEsquerda :: EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaXequeColunaEsquerda estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    | (getTipoQuadrado(getQuadradoAt estado celula)) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `mod` 8 == 0 then -1
-        else verificaXequeColunaEsquerda estado cor False (celula-1)
-    | (primeiraIteracao && celula `mod` 8 /= 0) = verificaXequeColunaEsquerda estado cor False (celula-1)
-    | (celula >= 0) =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
-             if (celula `mod` 8) /= 0 then verificaXequeColunaEsquerda estado cor False (celula-1)
-             else -1
-        else
-             if ((getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama) then celula
-             else -1
-    | otherwise = -1
-
-verificaXequeColunaDireita :: EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaXequeColunaDireita estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    | (getTipoQuadrado(getQuadradoAt estado celula)) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `mod` 8 == 7 then -1
-        else verificaXequeColunaDireita estado cor False (celula+1)
-    | (primeiraIteracao && celula `mod` 8 /= 7) = verificaXequeColunaDireita estado cor False (celula+1)
-    | (celula <= 63) =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
-             if (celula `mod` 8) /= 7 then verificaXequeColunaDireita estado cor False (celula+1)
-             else -1
-        else
-             if ((getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama) then celula
-             else -1
-    | otherwise = -1
-
-verificaXequeLinhaAbaixo ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaXequeLinhaAbaixo estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    | (getTipoQuadrado(getQuadradoAt estado celula)) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `div` 8 == 7 then -1
-        else verificaXequeLinhaAbaixo estado cor False (celula+8)
-    | (primeiraIteracao) = verificaXequeLinhaAbaixo estado cor False (celula+8)
-    | (celula `div` 8) < 8 =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if getCorQuadrado (getQuadradoAt estado celula) == SemCor then
-             if (celula `div` 8) /= 7 then verificaXequeLinhaAbaixo estado cor False (celula+8)
-             else -1
-        else
-             if (getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
-             else -1
-    | otherwise = -1
-
-verificaXequeLinhaAcima ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaXequeLinhaAcima estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `div` 8 == 0 then -1
-        else verificaXequeLinhaAcima estado cor False (celula-8)
-    | (primeiraIteracao) = verificaXequeLinhaAcima estado cor False (celula-8)
-    | ((celula `div` 8) < 8) =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if getCorQuadrado (getQuadradoAt estado celula) == SemCor then
-             if (celula `div` 8) /= 0 then verificaXequeLinhaAcima estado cor False (celula-8)
-             else -1
-        else
-             if (getTipoQuadrado (getQuadradoAt estado celula)) == Torre || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
-             else -1
-    | otherwise = -1
-
-verificaDiagonalSuperiorEsquerda ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaDiagonalSuperiorEsquerda estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `mod` 8 == 0 || celula `div` 8 == 0 then -1
-        else verificaDiagonalSuperiorEsquerda estado cor False (celula-9)
-    | (primeiraIteracao && (celula `mod` 8) /= 0 && celula `div` 8 /= 0) = verificaDiagonalSuperiorEsquerda estado cor False (celula-9)
-    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
-             if (celula `mod` 8) /= 0 && celula `div` 8 /= 0 then verificaDiagonalSuperiorEsquerda estado cor False (celula-9)
-             else -1
-        else
-             if (getTipoQuadrado (getQuadradoAt estado celula)) == Bispo || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
-             else -1
-    | otherwise = -1
-
-verificaDiagonalInferiorEsquerda ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaDiagonalInferiorEsquerda estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `mod` 8 == 0 || celula `div` 8 == 7 then -1
-        else verificaDiagonalInferiorEsquerda estado cor False (celula+7)
-    | (primeiraIteracao && (celula `mod` 8) /= 0 && celula `div` 8 /= 7) = verificaDiagonalInferiorEsquerda estado cor False (celula+7)
-    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
-             if (celula `mod` 8) /= 0 && celula `div` 8 /= 7 then verificaDiagonalInferiorEsquerda estado cor False (celula+7)
-             else -1
-        else
-             if (getTipoQuadrado (getQuadradoAt estado celula) == Bispo) || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
-             else -1
-    | otherwise = -1
-
-verificaDiagonalSuperiorDireita ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaDiagonalSuperiorDireita estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `mod` 8 == 7 || celula `div` 8 == 0 then -1
-        else verificaDiagonalSuperiorDireita estado cor False (celula-7)
-    | (primeiraIteracao && (celula `mod` 8) /= 7 && celula `div` 8 /= 0) = verificaDiagonalSuperiorDireita estado cor False (celula-7)
-    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
-             if (celula `mod` 8) /= 7 && celula `div` 8 /= 0 then verificaDiagonalSuperiorDireita estado cor False (celula-7)
-             else -1
-        else
-             if (getTipoQuadrado (getQuadradoAt estado celula) == Bispo) || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
-             else -1
-    | otherwise = -1
-
-verificaDiagonalInferiorDireita ::  EstadoJogo -> CorPeca -> Bool -> Int -> Int
-verificaDiagonalInferiorDireita estado cor primeiraIteracao celula
-    | celula<0 || celula>63 = -1
-    |  getTipoQuadrado(getQuadradoAt estado celula) == Rei && getCorQuadrado(getQuadradoAt estado celula) == inverteCor cor =
-        if celula `mod` 8 == 7 || celula `div` 8 == 7 then -1
-        else verificaDiagonalInferiorDireita estado cor False (celula+9)
-    | (primeiraIteracao && (celula `mod` 8) /= 7 && celula `div` 8 /= 7) = verificaDiagonalInferiorDireita estado cor False (celula+9)
-    | ((celula `div` 8) < 8) && ((celula `div` 8) >= 0) =
-        if getCorQuadrado (getQuadradoAt estado celula) == inverteCor cor then -1
-        else if (getCorQuadrado (getQuadradoAt estado celula) == SemCor) then
-             if (celula `mod` 8) /= 7 && celula `div` 8 /= 7 then verificaDiagonalInferiorDireita estado cor False (celula+9)
-             else -1
-        else
-             if (getTipoQuadrado (getQuadradoAt estado celula) == Bispo) || (getTipoQuadrado (getQuadradoAt estado celula)) == Dama then celula
-             else -1
-    | otherwise = -1
-
-verificaXequeCavaloSuperiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloSuperiorEsquerdo estado cor celula
-    | celula<0 || celula>63 = -1
-    | (((celula-16) `div` 8)  >=0 && ((celula `mod` 8)-1) >= 0) =
-           if getCorQuadrado (getQuadradoAt estado (celula -17)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula-17))) == Cavalo then (celula-17)
-           else -1
-    | otherwise = -1
-
-verificaXequeCavaloSuperiorCentralEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloSuperiorCentralEsquerdo estado cor celula
-    | celula<0 || celula>63 = -1
-    | (((celula-8) `div` 8) >=0 && ((celula `mod` 8)-2) >=0) =
-           if getCorQuadrado (getQuadradoAt estado (celula-10)) == cor && getTipoQuadrado (getQuadradoAt estado (celula-10)) == Cavalo then (celula-10)
-           else -1
-    | otherwise = -1
-
-verificaXequeCavaloInferiorCentralEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloInferiorCentralEsquerdo estado cor celula
-    | celula<0 || celula>63 = -1
-    | (((celula `mod` 8) - 2) >=0 && (celula+8) `div` 8 <=7) =
-           if getCorQuadrado (getQuadradoAt estado (celula+6)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+6))) == Cavalo then (celula+6)
-           else -1
-    | otherwise = -1
-
-verificaXequeCavaloInferiorEsquerdo :: EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloInferiorEsquerdo estado cor celula
-    | celula<0 || celula>63 = -1
-    | (((celula+16) `div` 8) <=7 && ((celula `mod` 8)-1) >=0) =
-           if getCorQuadrado (getQuadradoAt estado (celula+15)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+15))) == Cavalo then (celula+15)
-           else -1
-    | otherwise = -1
-
-verificaXequeCavaloSuperiorDireito ::  EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloSuperiorDireito estado cor celula
-    | celula<0 || celula>63 = -1
-    | ((celula-16) `div` 8 >=0 && ((celula `mod` 8)+1)<= 7) =
-          if getCorQuadrado (getQuadradoAt estado (celula -15)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula-15))) == Cavalo then (celula-15)
-          else -1
-    | otherwise = -1
-
-verificaXequeCavaloSuperiorCentralDireito ::  EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloSuperiorCentralDireito estado cor celula
-    | celula<0 || celula>63 = -1
-    | ((celula-8) `div` 8 >=0 && ((celula `mod` 8)+2) <= 7) =
-           if getCorQuadrado (getQuadradoAt estado (celula-6)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula-6))) == Cavalo then (celula-6)
-           else -1
-    | otherwise = -1
-
-verificaXequeCavaloInferiorCentralDireito ::  EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloInferiorCentralDireito estado cor celula
-    | celula<0 || celula>63 = -1
-    | (((celula `mod` 8)+2) >=0 && (celula+8) `div` 8 <=7) =
-            if getCorQuadrado (getQuadradoAt estado (celula+10)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+10))) == Cavalo then (celula+10)
-            else -1
-    | otherwise = -1
-
-verificaXequeCavaloInferiorDireito :: EstadoJogo -> CorPeca -> Int -> Int
-verificaXequeCavaloInferiorDireito estado cor celula
-    | celula<0 || celula>63 = -1
-    | ((celula+16) `div` 8 <=7 && ((celula `mod` 8)+1) <=7) =
-            if getCorQuadrado (getQuadradoAt estado (celula+17)) == cor && (getTipoQuadrado (getQuadradoAt estado (celula+17))) == Cavalo then (celula+17)
-            else -1
-    | otherwise = -1
+listaTodasJogadasRei :: Posicao -> Jogo -> [Posicao] -- TODO: adicionar casos de roque - anda 2 casas
+listaTodasJogadasRei posi@(x1,y1) jo
+  | (x1 == 0) && (y1 /= 0) && (y1 /= 7) = casaCima ++ casaEsquerda ++ casaDireita ++ casaSD ++ casaSE
+  | (x1 == 0) && (y1 == 0) = casaCima ++ casaDireita ++ casaSD
+  | (x1 == 0) && (y1 == 7) = casaCima ++ casaEsquerda ++ casaSE
+  | (x1 == 7) && (y1 /= 0) && (y1 /= 7) = casaBaixo ++ casaEsquerda ++ casaDireita ++ casaIE ++ casaID
+  | (x1 == 7) && (y1 == 0) = casaBaixo ++ casaDireita ++ casaID
+  | (x1 == 7) && (y1 == 7) = casaBaixo ++ casaEsquerda ++ casaIE
+  | y1 == 0 = casaCima ++ casaBaixo ++ casaDireita ++ casaSD ++ casaID
+  | y1 == 7 = casaCima ++ casaBaixo ++ casaEsquerda ++ casaSE ++ casaIE
+  | otherwise = casaCima ++ casaBaixo ++ casaDireita ++ casaEsquerda ++ casaSE ++ casaSD ++ casaIE ++ casaID
+  where
+      corRei = getCorPosicao posi jo
+      casaCima
+        = [(x1 + 1, y1) |
+             (getPecaPosicao (x1 + 1, y1) jo == pecaVazia)
+               || (getCorPosicao (x1 + 1, y1) jo == alternaCor corRei)]
+      casaBaixo
+        = [(x1 - 1, y1) |
+             (getPecaPosicao (x1 - 1, y1) jo == pecaVazia)
+               || (getCorPosicao (x1 - 1, y1) jo == alternaCor corRei)]
+      casaEsquerda
+        = [(x1, y1 - 1) |
+             (getPecaPosicao (x1, y1 - 1) jo == pecaVazia)
+               || (getCorPosicao (x1, y1 - 1) jo == alternaCor corRei)]
+      casaDireita
+        = [(x1, y1 + 1) |
+             (getPecaPosicao (x1, y1 + 1) jo == pecaVazia)
+               || (getCorPosicao (x1, y1 + 1) jo == alternaCor corRei)]
+      casaSE
+        = [(x1 + 1, y1 - 1) |
+             (getPecaPosicao (x1 + 1, y1 - 1) jo == pecaVazia)
+               || (getCorPosicao (x1 + 1, y1 - 1) jo == alternaCor corRei)]
+      casaSD
+        = [(x1 + 1, y1 + 1) |
+             (getPecaPosicao (x1 + 1, y1 + 1) jo == pecaVazia)
+               || (getCorPosicao (x1 + 1, y1 + 1) jo == alternaCor corRei)]
+      casaIE
+        = [(x1 - 1, y1 - 1) |
+             (getPecaPosicao (x1 - 1, y1 - 1) jo == pecaVazia)
+               || (getCorPosicao (x1 - 1, y1 - 1) jo == alternaCor corRei)]
+      casaID
+        = [(x1 - 1, y1 + 1) |
+             (getPecaPosicao (x1 - 1, y1 + 1) jo == pecaVazia)
+               || (getCorPosicao (x1 - 1, y1 + 1) jo == alternaCor corRei)]

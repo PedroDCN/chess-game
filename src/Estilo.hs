@@ -34,6 +34,9 @@ cssBlack = [("background-color", "#789454"), ("color", "#f0d9b5")]
 cssHighlight :: [(String, String)]
 cssHighlight = [("box-shadow", "inset 0 0 3px 3px yellow")]
 
+cssBola :: [(String, String)]
+cssBola = [("border-radius", "50%"), ("display", "block"), ("height", "80px"), ("width", "80px"), ("border", "1px solid #000")]
+
 -- TODO: calcular tamanho automático de quadrado para ajustar a tamanho qualquer do tabuleiro
 calculaTamanhoQuadrado' = let width = fst tamanhoBorda - 1 in
                          diminuiERetorna width

@@ -5,9 +5,11 @@ import Graphics.UI.Threepenny.Core
 import Data.List
 import Estilo
 import Data.Maybe
-import Utilitarios
 import Tipos
-import Tabuleiro
+import Xadrez
+import LogicaValidar
+import LogicaJogar
+import LogicaXeque
 
 config :: Window -> UI ()
 config window = do
@@ -23,46 +25,50 @@ config window = do
         # set style cssContainerBoard
 
     -- adiciona as casas no tabuleiro - malha quadriculada 8x8
-    adicionaCasas (element tab) Branca
+    adicionaCasas (element tab) CasaBranca
 
     -- definição textos invisíveis para guardar jogada
     j1 <- UI.string "" #. "j1" # set UI.id_ "j1"
-    -- definição de variáveis de estado do jogo
-    let estadoJogoInicialPlayer = habilitarMovimento estadoJogoInicialBranco
-    let copiaEstadoJogoInicialPlayer = habilitarMovimento estadoJogoInicialBranco
-    let estadoJogoInicialBot = desabilitarMovimento estadoJogoInicialPreto
-    let vez = Branco
 
-    -- definição div invisível que guarda o esado de jogo atual em forma de string
-    textoEstadoPlayer <- UI.string (show estadoJogoInicialPlayer) #. "player"
-    textoEstadoPLayer2 <- UI.string (show copiaEstadoJogoInicialPlayer) #. "bu"
-    texttoEstadoBot <- UI.string (show estadoJogoInicialBot) #. "bot"
-    estadop <- UI.div #. "estadoPlayer" 
-        #+ [element textoEstadoPlayer]
-    estadobu <- UI.div #. "estadoBackup"
-        #+ [element textoEstadoPLayer2]
-    estadob <- UI.div #. "estadoBot"
-        #+ [element texttoEstadoBot]
-    textoVez <- UI.string (show vez) #. "vez"
-    vezc <- UI.div #. "vezJ"
-        #+ [element textoVez]
-
-    estado <- UI.div #. "estado" -- div que guarda as duas divs de estado
-        #+ [element estadop, element estadobu, element vezc, element estadob]
+    -- definição do estado do jogo
+    let jogo = jogoInicial
+    --consoleLog' $ show (tabuleiro jogo)
+    textoEstadoJogo <- UI.string (show jogo) #. "jogo" -- criada string que guarda o jogo
+    divTextoEstado <- UI.div #. "estadoJogo" #+ [element textoEstadoJogo]
+    textoVez <- UI.string (show $ getVezDeQuem jogo) #. "vez" -- criada string que guarda a vez de quem no jogo
+    divTextoVez <- UI.div #. "estadoVez" #+ [element textoVez]
+    estado <- UI.div #. "estado" -- criada div que guarda o texto do jogo e da vez
+        #+ [element divTextoEstado, element divTextoVez]
 
     divinvisivel <- UI.div #. "mov" -- div invisível que guarda as casas da jogada atual e o estado do jogo
         # set style [("display", "none")]
         #+ [element j1, element estado]
 
-    -- adiciona div do tabuleiro e dos botões em div principal
+    s <- UI.string "True" #. "sit" # set UI.id_ "s"
+    s2 <- UI.div #. "s" #+ [element s]
+    estado2 <- UI.div #. "situacao"
+        #+ [element s2]
+
+    -- adiciona div do tabuleiro e das jogadas na div principal
     principal <- UI.div #. "principal"
         #+ [element divtab, element divinvisivel]
         # set style cssContainerPrincipal
 
-    -- adiciona div principal no body
-    getBody window #+ [element principal]
 
-    -- adicionando peças na posição inicial
+    imgbola1 <- UI.div #. "bolabranca"
+        # set style (("display","block"):("background-color", "#e9e9e9") : cssBola)
+    imgbola2 <- UI.div #. "bolapreta"
+        # set style (("display","none"):("background-color", "#111") : cssBola)
+    invs <- UI.div #. "invisivel" # set style [("height", "160px"), ("width", "80px"), ("display", "block")]
+    divVez <- UI.div #. "bolinhas" # set style [("top", "50%"), ("left", "80%"), ("width", "5%"), 
+        ("position", "absolute"), ("transform", "translateY(-50%)"), 
+        ("-webkit-transform", "translateY(-50%)"), ("-moz-transform", "translateY(-50%)")]
+        #+ [element imgbola2, element invs, element imgbola1]
+    
+    -- adiciona div principal no tela
+    getBody window #+ [element principal, element estado2, element divVez]
+
+    -- adicionando peças na posição inicial do tabuleiro
     adicionaPecas
 
     -- define funções de efeito de hover in e out de todas as casas do tabuleiro
@@ -71,47 +77,197 @@ config window = do
     -- define funções para movimento de peças ao clicar para qualquer casa do tabuleiro
     fazMovimentoCasas
 
+    w <- getBody window
+    on UI.mousemove w (\ (x, y) -> do
+        cor <- getVez
+        if cor == Branca then do
+            callFunction $ deixaBolaVisivel "bolabranca"
+            getUIElementCasa "bolapreta" # set style [("display", "none")]
+        else do
+            callFunction $ deixaBolaVisivel "bolapreta"
+            getUIElementCasa "bolabranca" # set style [("display", "none")]
+
+        jo <- getEstadoJogo
+        let posRei' = foldl (\acc pos -> if (tipo (getPecaPosicao pos (mudaVez jo)) == Rei) &&
+                        (getCorPosicao pos (mudaVez jo) == cor) then
+                            pos:acc else acc) [] listaTodasPosicoes
+        let posRei = head posRei'
+        rei <- getUIElementCasa (transformaPosicao posRei)
+        if verificaEstaEmChequeMate (mudaVez jo) then do
+            callFunction $ removeSombraCasa $ transformaPosicao posRei
+            element rei # set style [("box-shadow", "inset 0 0 3px 3px Firebrick1")]
+        else getUIElementCasa "tabuleiro"
+        )
+
 -- função para fazer jogada dada o clique de uma peça
 addJogada :: String -> UI ()
-addJogada f = do
+addJogada f = do -- f é a casa, a2 f5 g4 e5
     w <- askWindow
-    j1 <- getElementsByClassName w "j1"
+    cor <- getVez
+    j1 <- getElementsByClassName w "j1" -- j1 é o elemento q guarda a primeira jogada
     let pos1 = head j1
-    casaI <- callFunction $ pegaTexto "j1"
-    if casaI == f then do
-        element pos1 # set UI.text ""
-        callFunction $ removeSombraCasa casaI
-        return ()
-    else do
-        if null casaI then do
-            element pos1 # set UI.text f
-            element pos1 # set style cssHighlight
-            return ()
+
+    jo <- getEstadoJogo
+
+    -- verifica se está em xeque
+    if verificaEstaEmCheque jo
+        then do -- verifica se está em xeque mate
+        if verificaEstaEmChequeMate jo
+            then do
+                s <- getElementsByClassName w "sit"
+                let sit = head s
+                element sit # set children []
+                nt <- UI.string "False" #. "sit"
+                element sit #+ [element nt]
+                let cor = vezDeQuem jo
+                let posRei' = foldl (\acc pos -> if (tipo (getPecaPosicao pos jo) == Rei) &&
+                        (getCorPosicao pos jo == cor) then
+                            pos:acc else acc) [] listaTodasPosicoes
+                let posRei = head posRei'
+                rei <- getUIElementCasa (transformaPosicao posRei)
+                callFunction $ removeSombraCasa $ transformaPosicao posRei
+                element rei # set style [("box-shadow", "inset 0 0 3px 3px Firebrick1")]
+                consoleLog' $ "Cheque mate, vitória da " ++ show(alternaCor $ vezDeQuem jo)
         else do
-            movePeca casaI f
-            element pos1 # set UI.text ""
-            callFunction $ removeSombraCasa casaI
-            return ()
+            consoleLog' "em cheque, precisa sair dele"
+            casaI <- callFunction $ pegaTexto "j1"
+            if casaI == f then do
+                element pos1 # set UI.text ""
+                callFunction $ removeSombraCasa casaI
+                return ()
+            else do
+                if null casaI then do
+                    valorDentroDaCasa <- callFunction $ pegaTexto f
+                    if valorDentroDaCasa == "" then return () else do
+                        -- verificar se a cor da peça na casa é igual a cor da vez
+                        c <- callFunction $ pegaCorPecaCasa f
+                        if getCorDeTipoPeca' c == cor then do
+                            element pos1 # set UI.text f
+                            element pos1 # set style cssHighlight
+                            return ()
+                        else do
+                            consoleLog' $ "não é a vez da cor : " ++ show (alternaCor cor)
+                else do -- movimenta no jogo
+                    let depoisJo' = fazerJogada (Jogada (transformaNotacao casaI) (transformaNotacao f)) jo -- transformar casaI e f em pares de ints seguindo padrão interno
+                    let depoisJo = if verificaEstaEmCheque (mudaVez depoisJo') then jo else depoisJo'
+                    if tabuleiro jo == tabuleiro depoisJo then do
+                        consoleLog' "movimento inválido, tente jogar novamente"
+                        element pos1 # set UI.text ""
+                        callFunction $ removeSombraCasa casaI
+                        return ()
+                    else do
+                        setEstadoJogo depoisJo
+                        setVez $ getVezDeQuem depoisJo
+                        -- movimenta ui
+                        movePeca casaI f
+                        element pos1 # set UI.text ""
+                        callFunction $ removeSombraCasa casaI
+                        consoleLog' $ "movendo peça de " ++ casaI ++ " para " ++ f
+                        return ()
+
+                        if verificaEstaEmChequeMate depoisJo -- verifica se deu mate no inimigo
+                            then do
+                                s <- getElementsByClassName w "sit"
+                                let sit = head s
+                                element sit # set children []
+                                nt <- UI.string "False" #. "sit"
+                                element sit #+ [element nt]
+                                let cor = vezDeQuem jo
+                                let posRei' = foldl (\acc pos -> if (tipo (getPecaPosicao pos jo) == Rei) &&
+                                        (getCorPosicao pos jo == cor) then
+                                            pos:acc else acc) [] listaTodasPosicoes
+                                let posRei = head posRei'
+                                rei <- getUIElementCasa (transformaPosicao posRei)
+                                callFunction $ removeSombraCasa $ transformaPosicao posRei
+                                element rei # set style [("box-shadow", "inset 0 0 3px 3px Firebrick1")]
+                                consoleLog' $ "cheque mate acabou, vitoria da " ++ show cor
+                            else return ()
+
+    -- não está em cheque
+    else
+        if verificaPosicaoAfogado jo
+            then do
+                s <- getElementsByClassName w "sit" -- j1 é o elemento q guarda a primeira jogada
+                let sit = head s
+                element sit # set children []
+                nt <- UI.string "False" #. "sit"
+                element sit #+ [element nt]
+                consoleLog' "Rei afogado, empate"
+        else do
+            -- faz jogada normal
+            consoleLog' "situação de jogada normal"
+            casaI <- callFunction $ pegaTexto "j1"
+            if casaI == f then do
+                element pos1 # set UI.text ""
+                callFunction $ removeSombraCasa casaI
+                return ()
+            else do
+                if null casaI then do
+                    valorDentroDaCasa <- callFunction $ pegaTexto f
+                    if valorDentroDaCasa == "" then return () else do
+                        -- verificar se a cor da peça na casa é igual a cor da vez
+                        c <- callFunction $ pegaCorPecaCasa f
+                        if getCorDeTipoPeca' c == cor then do
+                            element pos1 # set UI.text f
+                            element pos1 # set style cssHighlight
+                            return ()
+                        else do
+                            consoleLog' $ "não é a vez da cor : " ++ show (alternaCor cor)
+                else do -- movimenta no jogo
+                    let depoisJo' = fazerJogada (Jogada (transformaNotacao casaI) (transformaNotacao f)) jo -- transformar casaI e f em pares de ints seguindo padrão interno
+                    let depoisJo = if verificaEstaEmCheque (mudaVez depoisJo') then jo else depoisJo'
+                    if tabuleiro jo == tabuleiro depoisJo then do
+                        consoleLog' "movimento inválido, tente jogar novamente"
+                        element pos1 # set UI.text ""
+                        callFunction $ removeSombraCasa casaI
+                        return ()
+                    else do
+                        setEstadoJogo depoisJo
+                        setVez $ getVezDeQuem depoisJo
+                        -- movimenta ui
+                        movePeca casaI f
+                        element pos1 # set UI.text ""
+                        callFunction $ removeSombraCasa casaI
+                        consoleLog' $ "movendo peça de " ++ casaI ++ " para " ++ f
+                        return ()
+
+                        if verificaEstaEmChequeMate depoisJo -- verifica se deu mate no inimigo
+                            then do
+                                s <- getElementsByClassName w "sit"
+                                let sit = head s
+                                element sit # set children []
+                                nt <- UI.string "False" #. "sit"
+                                element sit #+ [element nt]
+                                let cor = vezDeQuem jo
+                                let posRei' = foldl (\acc pos -> if (tipo (getPecaPosicao pos jo) == Rei) &&
+                                        (getCorPosicao pos jo == cor) then
+                                            pos:acc else acc) [] listaTodasPosicoes
+                                let posRei = head posRei'
+                                rei <- getUIElementCasa (transformaPosicao posRei)
+                                callFunction $ removeSombraCasa $ transformaPosicao posRei
+                                element rei # set style [("box-shadow", "inset 0 0 3px 3px Firebrick1")]
+                                consoleLog' $ "cheque mate acabou, vitoria da " ++ show cor
+                            else return ()
 
 -- Função que adiciona as casas do tabuleiro, seguindo o padrão quadriculado do jogo
-adicionaCasas :: UI Element -> Cor -> UI ()
+adicionaCasas :: UI Element -> CorCasa -> UI ()
 adicionaCasas widg cor = do
     add' 64 widg cor
     return ()
 
 -- função auxiliar de adicionaCasas
-add' :: Int -> UI Element -> Cor -> UI ()
+add' :: Int -> UI Element -> CorCasa -> UI ()
 add' 0 w cor = return ()
 add' n w cor = do
-        d <- UI.div #. ((listaCasas !! (64 - n)) ++ " " ++ (if cor == Branca then white else black))
-            # set style (cssSquare ++ (if cor == Branca then cssWhite else cssBlack))
+        d <- UI.div #. ((listaCasas !! (64 - n)) ++ " " ++ (if cor == CasaBranca then white else black))
+            # set style (cssSquare ++ (if cor == CasaBranca then cssWhite else cssBlack))
             # set UI.id_ (listaCasas !! (64 - n))
         w #+ [element d]
+        -- consoleLog' ("div " ++ (listaCasas !! (64-n)))
         add' (n-1) w (if (64 - n + 1) `mod` 8 == 0 then cor else troca cor)
 
 
 -- função que adiciona as peças na posição inicial do jogo
--- TODO: fazer mais funcional -> lista de pares casa peça e passar num foldl
 adicionaPecas = do
     -- w <- askWindow
     -- adiciona peças brancas
@@ -156,7 +312,7 @@ loadPeca' :: String -> UI Element
 loadPeca' peca = do
     url <- loadFile "image/png" ("src/pb/" ++ peca ++".png")
     img <- mkElement "img" # set UI.width 90 # set UI.src url
-    mkElement "div" #. ("peca-" ++ peca) #+ [element img]
+    mkElement "div" #. (peca++"peca") #+ [element img]
 
 -- função que adiciona uma peça na casa especificada
 addPeca :: String -> String -> UI ()
@@ -180,7 +336,7 @@ movePeca casai casaf = do
             window <- askWindow
             ci <- UI.getElementsByClassName window casai
             let casaIni = head ci
-            let tipoPeca = drop 5 valorCasaini
+            let tipoPeca = take 2 valorCasaini
             element casaIni # set children [] -- limpa casa de início
             addPeca casaf tipoPeca -- usa função addPeca para adicionar peça na casaFinal do movimento
             return ()
@@ -211,12 +367,19 @@ fazHoverPeca' x = do
     px <- getUIElementCasa x
 
     on UI.hover px $ const $ do
-        element px # set style cssHighlight
-    
+        situacao <- callFunction $ pegaTexto "sit"
+        if situacao == "True" then
+            element px # set style cssHighlight
+        else
+            getUIElementCasa "s"
+
     on UI.leave px $ const $ do
         text <- callFunction $ pegaTexto "j1"
-        if text == x then return () else do
-            callFunction $ removeSombraCasa x
+        situacao <- callFunction $ pegaTexto "sit"
+        if situacao == "True" then
+            if text == x then return () else do
+                callFunction $ removeSombraCasa x
+        else return ()
 
 -- função que cria os eventos de mover uma peça no tabuleiro por meio de cliques nas casas
 fazMovimentoCasas :: UI ()
@@ -229,17 +392,40 @@ fazMovimentoPeca' x = do  -- função genérica adiciona bind de click para movi
     px <- getUIElementCasa x
 
     on UI.click px $ const $ do
-        addJogada x
+        situacao <- callFunction $ pegaTexto "sit"
+        if situacao == "True" then
+            addJogada x
+        else return ()
 
 -- Tipo de cor das casas do tabuleiro, usado para auxiliar na criação do tabuleiro
-data Cor = Sem | Preta | Branca deriving (Eq)
+data CorCasa = Sem | CasaPreta | CasaBranca deriving (Eq)
 
 -- função para trocar o valor de um elemento do tipo Cor
-troca :: Cor -> Cor
-troca Branca = Preta
-troca Preta = Branca
+troca :: CorCasa -> CorCasa
+troca CasaBranca = CasaPreta
+troca CasaPreta = CasaBranca
 
 -- Funções utilitárias de outras funções
+
+transformaNotacao :: String -> Posicao
+transformaNotacao casa = (linha (read [casa !! 1]::Int), coluna [head casa])
+    where
+        coluna y = fromJust $ lookup y (zip (words "a b c d e f g h") [0..7]) -- coluna a = 0, coluna b = 1 .. coluna h = 7
+        linha x = x-1 -- dada linha x no tabuleiro, representação interna é x-1 (ex: 4 = 3, pois vai de 0 a 7 internamente)
+
+transformaPosicao :: Posicao -> String
+transformaPosicao pos@(x, y) = coluna y ++ show (linha x)
+    where
+        coluna y1 = fromJust $ lookup y1 (zip [0..7] (words "a b c d e f g h"))
+        linha x1 = x1+1 
+
+getCorDeTipoPeca' :: String -> Cor
+getCorDeTipoPeca' (c:cs)
+    | c == 'w' = Branca
+    | otherwise = Preta
+
+pegaCorPecaCasa :: String -> JSFunction String
+pegaCorPecaCasa = ffi "document.getElementsByClassName(%1).item(0).firstElementChild.className"
 
 -- função utilitária que pega o valor de sombra de uma dada casa
 pegaEstiloSombraCasa :: String -> JSFunction String
@@ -258,84 +444,48 @@ pegaTexto :: String -> JSFunction String
 pegaTexto = ffi "document.getElementsByClassName(%1).item(0).innerHTML"
 
 -- função utilitária para debug
--- consoleLog' :: String -> UI()
--- consoleLog' = runFunction . ffi "console.log(%1)"
+consoleLog' :: String -> UI()
+consoleLog' = runFunction . ffi "console.log(%1)"
 
-getEstadoPlayer' :: JSFunction String
-getEstadoPlayer' = ffi "document.getElementsByClassName(%1).item(0).firstElementChild.firstElementChild.innerHTML" "estado"
+getEstadoJogo' :: JSFunction String -- retorna a representação textual do estado do jogo salva
+getEstadoJogo' = ffi "document.getElementsByClassName(%1).item(0).firstElementChild.firstElementChild.innerHTML" "estado"
 
 -- função que retorna o elemento do tipo EstadoJogo do player para ser alterado
-getEstadoPlayer :: UI EstadoJogo
-getEstadoPlayer = do
-    t <- callFunction getEstadoPlayer'
-    let f = read t::EstadoJogo
+getEstadoJogo :: UI Jogo
+getEstadoJogo = do
+    t <- callFunction getEstadoJogo'
+    let f = read t::Jogo
     return f
 
-setEstadoPlayer :: EstadoJogo -> UI ()
-setEstadoPlayer ej = do
-    w <- askWindow 
-    p <- UI.getElementsByClassName w "estadoPlayer"
-    textoEstadoPlayer <- UI.string (show ej) #. "player"
-    let divPlayer = head p
-    element divPlayer # set children [] -- limpa internamente a div = tira o do estado guardado
-    element divPlayer #+ [element textoEstadoPlayer] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
-    return ()
-
-getEstadoPlayerBu' :: JSFunction String
-getEstadoPlayerBu' = ffi "document.getElementsByClassName(%1).item(0).getElementsByClassName(%2).item(0).firstElementChild.innerHTML" "estado" "estadoBackup"
-
--- função que retorna o elemento do tipo EstadoJogoBackUp do player para ser alterado
-getEstadoPlayerBu :: UI EstadoJogo
-getEstadoPlayerBu = do
-    t <- callFunction getEstadoPlayerBu'
-    let f = read t::EstadoJogo
-    return f
-
-setEstadoPlayerBu :: EstadoJogo -> UI ()
-setEstadoPlayerBu ej = do
-    w <- askWindow 
-    p <- UI.getElementsByClassName w "estadoBackup"
-    textoEstadoPlayerBu <- UI.string (show ej) #. "Bu"
-    let divPlayerBu = head p
-    element divPlayerBu # set children [] -- limpa internamente a div = tira o do estado guardado
-    element divPlayerBu #+ [element textoEstadoPlayerBu] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
-    return ()
-
-getEstadoBot' :: JSFunction String
-getEstadoBot' = ffi "document.getElementsByClassName(%1).item(0).lastElementChild.firstElementChild.innerHTML" "estado"
-
--- função que retorna o elemento do tipo EstadoJogo do bot para ser alterado
-getEstadoBot :: UI EstadoJogo
-getEstadoBot = do
-    t <- callFunction getEstadoBot'
-    let f = read t::EstadoJogo
-    return f
-
-setEstadoBot :: EstadoJogo -> UI ()
-setEstadoBot ej = do
+setEstadoJogo :: Jogo -> UI ()
+setEstadoJogo ej = do
     w <- askWindow
-    p <- UI.getElementsByClassName w "estadoBot"
-    textoEstadoBot <- UI.string (show ej) #. "bot"
-    let divBot = head p
-    element divBot # set children [] -- limpa internamente a div = tira o do estado guardado
-    element divBot #+ [element textoEstadoBot] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
+    p <- UI.getElementsByClassName w "estadoJogo"
+    textoEstadoJogo <- UI.string (show ej) #. "jogo"
+    let divJogo = head p
+    element divJogo # set children [] -- limpa internamente a div = tira o do estado guardado
+    element divJogo #+ [element textoEstadoJogo] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
     return ()
 
-getVez' :: JSFunction String
-getVez' = ffi "document.getElementsByClassName(%1).item(0).getElementsByClassName(%2).item(0).firstElementChild.innerHTML" "estado" "vezJ"
+getVez' :: JSFunction String -- retorna a representação textual do estado do jogo salva
+getVez' = ffi "document.getElementsByClassName(%1).item(0).lastElementChild.firstElementChild.innerHTML" "estado"
 
-getVez :: UI TipoPeca
+-- função que retorna o elemento do tipo EstadoJogo do player para ser alterado
+getVez :: UI Cor
 getVez = do
     t <- callFunction getVez'
-    let f = read t::TipoPeca
+    let f = read t::Cor
     return f
 
-setVez :: TipoPeca -> UI ()
+setVez :: Cor -> UI ()
 setVez vez = do
     w <- askWindow
-    p <- UI.getElementsByClassName w "vezJ"
-    textoVez <- UI.string (show vez) #. "vez"
-    let divVez = head p
-    element divVez # set children []
-    element divVez #+ [element textoVez]
+    p <- UI.getElementsByClassName w "estadoVez"
+    textoVezJogo <- UI.string (show vez) #. "vez"
+    let divJogo = head p
+    element divJogo # set children [] -- limpa internamente a div = tira o do estado guardado
+    element divJogo #+ [element textoVezJogo] -- redundante para evitar erros de buffer ao limpar e inserir logo em seguida
     return ()
+
+deixaBolaVisivel :: String -> JSFunction ()
+deixaBolaVisivel = ffi "document.getElementsByClassName(%1).item(0).style.removeProperty(\'display\')"
