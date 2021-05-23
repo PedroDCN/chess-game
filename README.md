@@ -6,6 +6,7 @@ Link para a especificação: [clique aqui](https://docs.google.com/document/d/16
 Para utilizar o programa, é preciso clonar o repositório na pasta de destino.
 ```
 git clone https://github.com/PedroDCN/chess-game.git
+cd chess-game
 ```
 Para utilizar a versão em Haskell, é preciso entrar na pasta /haskell:
 ```
