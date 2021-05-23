@@ -11,13 +11,13 @@ Para utilizar a versão em Haskell, é preciso entrar na pasta /haskell:
 ```
 cd haskell
 ```
-E executar os passos para rodar o programa haskell definidos [aqui](https://github.com/PedroDCN/chess-game/haskell/README.md).
+E executar os passos para rodar o programa haskell definidos [aqui](https://github.com/PedroDCN/chess-game/tree/master/haskell).
 
 Para utilizar a versão em Prolog, é preciso entrar na pasta /prolog:
 ```
 cd prolog
 ```
-E executar os passos para rodar o programa prolog definidos [aqui](https://github.com/PedroDCN/chess-game/prolog/README.md).
+E executar os passos para rodar o programa prolog definidos [aqui](https://github.com/PedroDCN/chess-game/tree/master/prolog).
 ## Integrantes:
 - [@PedroDCN](https://github.com/PedroDCN) - Pedro Donato
 - [@bielmenezesc](https://github.com/bielmenezesc) - Gabriel Menezes
