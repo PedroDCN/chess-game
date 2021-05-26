@@ -28,8 +28,28 @@ menu():-
 	write('*          Jogo de Xadrez          *'),nl,
 	write('*                                  *'),nl,
 	write('************************************'),nl.
-	
-	
+
+
+menu2() :-
+    writeln('                                                     _:_        '),
+    writeln('      Jogo de Xadrez                                \'-.-\'     '),
+    writeln('      Feito em Prolog                      ()      __.\'.__     '),
+    writeln('                                        .-:--:-.  |_______|     '),
+    writeln('                                 ()      \\____/    \\=====/    '),
+    writeln('                                 /\\      {====}     )___(      '),
+    writeln('                      (\\=,      /  \\      )__(     /_____\\   '),
+    writeln('      __    |\'-\'-\'|  //  .\\    (    )    /____\\     |   |  '),
+    writeln('     /  \\   |_____| (( \\_  \\    )__(      |  |      |   |    '),
+    writeln('     \\__/    |===|   ))  `\\_)  /____\\     |  |      |   |    '),
+    writeln('    /____\\   |   |  (/     \\    |  |      |  |      |   |     '),
+    writeln('     |  |    |   |   | _.-\'|    |  |      |  |      |   |      '),
+    writeln('     |__|    )___(    )___(    /____\\    /____\\    /_____\\   '),
+    writeln('    (====)  (=====)  (=====)  (======)  (======)  (=======)     '),
+    writeln('    }===={  }====={  }====={  }======{  }======{  }======={     '),
+    writeln('jgs(______)(_______)(_______)(________)(________)(_________)    '),
+    writeln('==============================================================  '),
+    writeln('').
+
 casa(a1,R):- R is 56.
 casa(a2,R):- R is 48.
 casa(a3,R):- R is 40.
@@ -102,7 +122,76 @@ casa(h6,R):- R is 23.
 casa(h7,R):- R is 15.
 casa(h8,R):- R is 7.
 
+casa('000',-1).
 
+casaVetor(a1,X,Y):- X = 0, Y = 0.
+casaVetor(a2,X,Y):- X = 1, Y = 0.
+casaVetor(a3,X,Y):- X = 2, Y = 0.
+casaVetor(a4,X,Y):- X = 3, Y = 0.
+casaVetor(a5,X,Y):- X = 4, Y = 0.
+casaVetor(a6,X,Y):- X = 5, Y = 0.
+casaVetor(a7,X,Y):- X = 6, Y = 0.
+casaVetor(a8,X,Y):- X = 7, Y = 0.
 
+casaVetor(b1,X,Y):- X = 0, Y = 1.
+casaVetor(b2,X,Y):- X = 1, Y = 1.
+casaVetor(b3,X,Y):- X = 2, Y = 1.
+casaVetor(b4,X,Y):- X = 3, Y = 1.
+casaVetor(b5,X,Y):- X = 4, Y = 1.
+casaVetor(b6,X,Y):- X = 5, Y = 1.
+casaVetor(b7,X,Y):- X = 6, Y = 1.
+casaVetor(b8,X,Y):- X = 7, Y = 1.
 
+casaVetor(c1,X,Y):- X = 0, Y = 2.
+casaVetor(c2,X,Y):- X = 1, Y = 2.
+casaVetor(c3,X,Y):- X = 2, Y = 2.
+casaVetor(c4,X,Y):- X = 3, Y = 2.
+casaVetor(c5,X,Y):- X = 4, Y = 2.
+casaVetor(c6,X,Y):- X = 5, Y = 2.
+casaVetor(c7,X,Y):- X = 6, Y = 2.
+casaVetor(c8,X,Y):- X = 7, Y = 2.
 
+casaVetor(d1,X,Y):- X = 0, Y = 3.
+casaVetor(d2,X,Y):- X = 1, Y = 3.
+casaVetor(d3,X,Y):- X = 2, Y = 3.
+casaVetor(d4,X,Y):- X = 3, Y = 3.
+casaVetor(d5,X,Y):- X = 4, Y = 3.
+casaVetor(d6,X,Y):- X = 5, Y = 3.
+casaVetor(d7,X,Y):- X = 6, Y = 3.
+casaVetor(d8,X,Y):- X = 7, Y = 3.
+
+casaVetor(e1,X,Y):- X = 0, Y = 4.
+casaVetor(e2,X,Y):- X = 1, Y = 4.
+casaVetor(e3,X,Y):- X = 2, Y = 4.
+casaVetor(e4,X,Y):- X = 3, Y = 4.
+casaVetor(e5,X,Y):- X = 4, Y = 4.
+casaVetor(e6,X,Y):- X = 5, Y = 4.
+casaVetor(e7,X,Y):- X = 6, Y = 4.
+casaVetor(e8,X,Y):- X = 7, Y = 4.
+
+casaVetor(f1,X,Y):- X = 0, Y = 5.
+casaVetor(f2,X,Y):- X = 1, Y = 5.
+casaVetor(f3,X,Y):- X = 2, Y = 5.
+casaVetor(f4,X,Y):- X = 3, Y = 5.
+casaVetor(f5,X,Y):- X = 4, Y = 5.
+casaVetor(f6,X,Y):- X = 5, Y = 5.
+casaVetor(f7,X,Y):- X = 6, Y = 5.
+casaVetor(f8,X,Y):- X = 7, Y = 5.
+
+casaVetor(g1,X,Y):- X = 0, Y = 6.
+casaVetor(g2,X,Y):- X = 1, Y = 6.
+casaVetor(g3,X,Y):- X = 2, Y = 6.
+casaVetor(g4,X,Y):- X = 3, Y = 6.
+casaVetor(g5,X,Y):- X = 4, Y = 6.
+casaVetor(g6,X,Y):- X = 5, Y = 6.
+casaVetor(g7,X,Y):- X = 6, Y = 6.
+casaVetor(g8,X,Y):- X = 7, Y = 6.
+
+casaVetor(h1,X,Y):- X = 0, Y = 7.
+casaVetor(h2,X,Y):- X = 1, Y = 7.
+casaVetor(h3,X,Y):- X = 2, Y = 7.
+casaVetor(h4,X,Y):- X = 3, Y = 7.
+casaVetor(h5,X,Y):- X = 4, Y = 7.
+casaVetor(h6,X,Y):- X = 5, Y = 7.
+casaVetor(h7,X,Y):- X = 6, Y = 7.
+casaVetor(h8,X,Y):- X = 7, Y = 7.

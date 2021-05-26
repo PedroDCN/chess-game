@@ -39,3 +39,94 @@ indicesValidos(I) :- I = [  0,  1,  2,  3,  4,  5,  6,  7,
                            40, 41, 42, 43, 44, 45, 46, 47,
                            48, 49, 50, 51, 52, 53, 54, 55,
                            56, 57, 58, 59, 60, 61, 62, 63].
+
+peca(tb).
+peca(cb).
+peca(bb).
+peca(db).
+peca(rb).
+peca(pb).
+peca(tp).
+peca(cp).
+peca(bp).
+peca(dp).
+peca(rp).
+peca(pp).
+
+cor(tb,b). % torre branca é branca
+cor(cb,b). % cavalo branco é branco
+cor(bb,b). % bispo branco é branco
+cor(db,b). % dama branca é branca
+cor(rb,b). % rei branco é branco
+cor(pb,b). % peão branco é branco
+cor(tp,p). % torre preta é preta
+cor(cp,p). % cavalo preto é preto
+cor(bp,p). % bispo preto é preto
+cor(dp,p). % dama preta é preta
+cor(rp,p). % rei preto é preto
+cor(pp,p). % peão preto é preto
+cor(v,s). % casa vazia Sem cor
+
+vazio(v). % casa vazia V
+
+coroposta(b,p).
+coroposta(p,b).
+coroposta(s,s).
+
+tabInicial(T) :- T = [  [tp,cp,bp,dp,rp,bp,cp,tp], % tabuleiro na posição inicial
+                [pp,pp,pp,pp,pp,pp,pp,pp],
+                [v,v,v,v,v,v,v,v],
+                [v,v,v,v,v,v,v,v],
+                [v,v,v,v,v,v,v,v],
+                [v,v,v,v,v,v,v,v],
+                [pb,pb,pb,pb,pb,pb,pb,pb],
+                [tb,cb,bb,db,rb,bb,cb,tb]
+            ].
+
+% pega a peça no tabuleiro T que está na posição (X,Y) e salva em P
+pegaPecaAt(X,Y,T,P) :-
+    Xn is 7 - X,
+    nth0(Xn, T, Linha),
+    nth0(Y, Linha, Pr),
+    P = Pr.
+
+removeAt(As,N1,Bs) :-
+    same_length(As,[_|Bs]),
+    append(Prefix,[_|Suffix],As),
+    length(Prefix,N1),
+    append(Prefix,Suffix,Bs).
+
+insertAt(E,N,Xs,Ys) :-
+    same_length([E|Xs],Ys),
+    append(Before,Xs0,Xs),
+    length(Before,N),
+    append(Before,[E|Xs0],Ys).
+
+% predicado que coloca na posição X,Y do tabuleiro T a peça P, salvando o novo tabuleiro em Tn
+setPecaAt(X,Y,P,T,Tn) :-
+    Xn is 7 - X,
+    nth0(Xn,T,Linha),
+    
+    % mudo a casa na posição Y da linha
+    removeAt(Linha,Y,NLinha),
+    insertAt(P,Y,NLinha,NovaLinha),
+
+    % mudo a linha X com a casa alterada
+    removeAt(T,Xn,Ntab),
+    insertAt(NovaLinha,Xn,Ntab,NovoTabuleiro),
+
+    Tn = NovoTabuleiro.
+
+verificaSeTemInimigo(CasaXY,Cor,T,TemInimigo) :-
+    CasaXY = [X,Y|_],
+    pegaPecaAt(X,Y,T,P),
+    coroposta(Cor,Coroposta),
+    cor(P,C),
+    (C == Coroposta -> TemInimigo = true;
+    TemInimigo = false).
+
+verificaSeCasaVazia(CasaXY,T,Vazia) :-
+    CasaXY = [X,Y|_],
+    pegaPecaAt(X,Y,T,P),
+    (vazio(P) -> Vazia = true;
+    Vazia = false).
